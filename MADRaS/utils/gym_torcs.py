@@ -219,12 +219,14 @@ class TorcsEnv:
         rank = MPI.COMM_WORLD.Get_rank()        
         if rank < self.no_of_visualisations and self.visualise:
             command = 'export TORCS_PORT={} && vglrun torcs -nolaptime'.format(client.port)
+            command1 = 'python -m MADRaS.traffic.const_vel {} 50 0 0'.format(self.port+1)
         else:
             command = 'export TORCS_PORT={} && vglrun torcs -t 10000000 -r ~/.torcs/config/raceman/quickrace.xml -nolaptime'.format(client.port)
         if self.vision is True:
             command += ' -vision'
 
         self.torcs_proc = subprocess.Popen([command], shell=True, preexec_fn=os.setsid)
+        self.traffic_proc = subprocess.Popen([command1], shell=True, preexec_fn=os.setsid)
         #self.torcs_proc = subprocess.Popen([command], shell=True)
         time.sleep(1)
 

@@ -1,18 +1,21 @@
 """Constant velocity Traffic Agent."""
 import sys
-import yaml
 import numpy as np
-from controllers.pid import PID
-from utils.gym_torcs import TorcsEnv
-import utils.snakeoil3_gym as snakeoil3
-from utils.madras_datatypes import Madras
+from MADRaS.controllers.pid import PID
+from MADRaS.utils.gym_torcs import TorcsEnv
+import MADRaS.utils.snakeoil3_gym as snakeoil3
+from MADRaS.utils.madras_datatypes import Madras
 
 madras = Madras()
-with open("./traffic/configurations.yml", "r") as ymlfile:
-    cfg = yaml.load(ymlfile)
 
 
-def playTraffic(port=3101, target_vel=50.0, angle=0.0, sleep=0):
+
+def playTraffic(port=3101,
+                target_vel=50.0,
+                angle=0.0,
+                sleep=0,
+                max_steps=100000,
+                episode_count=50):
     """Traffic Play function."""
     env = TorcsEnv(vision=False, throttle=True, gear_change=False)
     ob = None
@@ -25,8 +28,6 @@ def playTraffic(port=3101, target_vel=50.0, angle=0.0, sleep=0):
             ob = env.make_observation(obs)
         except:
             pass
-    episode_count = cfg['traffic']['max_eps']
-    max_steps = cfg['traffic']['max_steps_eps']
     early_stop = 0
     velocity = target_vel / 300.0
     accel_pid = PID(np.array([10.5, 0.05, 2.8]))
@@ -65,7 +66,6 @@ def playTraffic(port=3101, target_vel=50.0, angle=0.0, sleep=0):
             opp = ob.opponents
             front = np.array([opp[15], opp[16], opp[17], opp[18], opp[19]])
             closest_front = np.min(front)
-            print(ob.speedX * 300)
             vel_error = velocity - ob.speedX
             angle_error = -(ob.trackPos - angle) / 10 + ob.angle
             steer_pid.update_error(angle_error)
@@ -82,6 +82,7 @@ def playTraffic(port=3101, target_vel=50.0, angle=0.0, sleep=0):
                 brake = 0
         try:
             if 'termination_cause' in info.keys() and info['termination_cause'] == 'hardReset':
+                print(info)
                 print('Hard reset by some agent')
                 ob, client = env.reset(client=client, relaunch=True)
 

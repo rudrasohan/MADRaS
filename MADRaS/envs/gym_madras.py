@@ -85,12 +85,15 @@ class MadrasEnv(TorcsEnv,gym.Env):
         
         if rank < self.no_of_visualisations and self.visualise:
             command = 'export TORCS_PORT={} && vglrun torcs -nolaptime'.format(self.port)
+            command1 = 'python -m MADRaS.traffic.const_vel {} 50 0 0'.format(self.port+1)
         else:
             command = 'export TORCS_PORT={} && vglrun torcs -t 10000000 -r ~/.torcs/config/raceman/quickrace.xml -nolaptime'.format(self.port)
         if self.vision is True:
             command += ' -vision'
-
+        print("TRIED TO START TRAFFIC")
         self.torcs_proc = subprocess.Popen([command], shell=True, preexec_fn=os.setsid)
+        self.traffic_proc = subprocess.Popen([command1], shell=True, preexec_fn=os.setsid)
+        
         time.sleep(1)
         #if self.visualise:
         #    os.system('sh autostart.sh {}'.format(window_title))
