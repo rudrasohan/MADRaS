@@ -1,5 +1,6 @@
 """Constant velocity Traffic Agent."""
 import sys
+import time
 import numpy as np
 from MADRaS.controllers.pid import PID
 from MADRaS.utils.gym_torcs import TorcsEnv
@@ -7,7 +8,7 @@ import MADRaS.utils.snakeoil3_gym as snakeoil3
 from MADRaS.utils.madras_datatypes import Madras
 
 madras = Madras()
-
+#threadLock = threading.Lock()
 
 
 def playTraffic(port=3101,
@@ -17,12 +18,14 @@ def playTraffic(port=3101,
                 max_steps=100000,
                 episode_count=50):
     """Traffic Play function."""
+    print("PLAYING")
     env = TorcsEnv(vision=False, throttle=True, gear_change=False)
     ob = None
     while ob is None:
         try:
-            client = snakeoil3.Client(p=port, vision=False)
+            client = snakeoil3.Client(p=port, vision=False, traffic=True)
             client.MAX_STEPS = np.inf
+            print("READY FOR INPUT on port{}".format(port))
             client.get_servers_input(step=0)
             obs = client.S.d
             ob = env.make_observation(obs)
@@ -52,7 +55,7 @@ def playTraffic(port=3101,
                 ob = None
                 while ob is None:
                     try:
-                        client = snakeoil3.Client(p=port, vision=False)
+                        client = snakeoil3.Client(p=port, vision=False, traffic=True)
                         client.MAX_STEPS = np.inf
                         client.get_servers_input(step=0)
                         obs = client.S.d
@@ -84,20 +87,28 @@ def playTraffic(port=3101,
             if 'termination_cause' in info.keys() and info['termination_cause'] == 'hardReset':
                 print(info)
                 print('Hard reset by some agent')
-                ob, client = env.reset(client=client, relaunch=True)
+                time.sleep(1)
+                #ob, client = env.reset(client=client, relaunch=False)
+                done = True
+                break
 
         except Exception as e:
             print("Exception caught at point B at port " + str(i) + str(e) )
             ob = None
             while ob is None:
                 try:
-                    client = snakeoil3.Client(p=port, vision=False)  # Open new UDP in vtorcs
+                    client = snakeoil3.Client(p=port, vision=False, traffic=True)  # Open new UDP in vtorcs
                     client.MAX_STEPS = np.inf
                     client.get_servers_input(0)  # Get the initial input from torcs
                     obs = client.S.d  # Get the current full-observation from torcs
                     ob = env.make_observation(obs)
                 except:
                     print("Exception caught at at point C at port " + str(i) + str(e))
+
+        if done:
+            print("OVER port{}".format(port))
+            break
+    print("BROKEN")
 
 
 if __name__ == "__main__":

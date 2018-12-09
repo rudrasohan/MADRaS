@@ -18,6 +18,8 @@ import numpy as np
 import MADRaS.utils.snakeoil3_gym as snakeoil3
 from MADRaS.utils.gym_torcs import TorcsEnv
 from MADRaS.controllers.pid import PID
+import threading
+from MADRaS.traffic.const_vel import playTraffic
 import gym
 import os
 import subprocess
@@ -30,7 +32,7 @@ class MadrasEnv(TorcsEnv,gym.Env):
     """Definition of the Gym Madras Env."""
     def __init__(self, vision=False, throttle=True,
                  gear_change=False, port=60934, pid_assist=False,
-                 CLIENT_MAX_STEPS=np.inf,visualise=True,no_of_visualisations=1):
+                 CLIENT_MAX_STEPS=np.inf,visualise=False,no_of_visualisations=1):
         # If `visualise` is set to False torcs simulator will run in headless mode
         """Init Method."""
         self.torcs_proc = None
@@ -61,7 +63,10 @@ class MadrasEnv(TorcsEnv,gym.Env):
         self.prev_vel = 0
         self.prev_dist = 0
         self.ob = None
+        self.t = None
         self.track_len = 7014.6
+        self.threads = []
+        #threadLock = threading.Lock()
         self.start_torcs_process()
         
     def get_free_udp_port(self):
@@ -85,23 +90,29 @@ class MadrasEnv(TorcsEnv,gym.Env):
         
         if rank < self.no_of_visualisations and self.visualise:
             command = 'export TORCS_PORT={} && vglrun torcs -nolaptime'.format(self.port)
-            command1 = 'python -m MADRaS.traffic.const_vel {} 50 0 0'.format(self.port+1)
+            #command1 = 'python -m MADRaS.traffic.const_vel {} 50 0 0'.format(self.port+1)
         else:
             command = 'export TORCS_PORT={} && vglrun torcs -t 10000000 -r ~/.torcs/config/raceman/quickrace.xml -nolaptime'.format(self.port)
         if self.vision is True:
             command += ' -vision'
-        print("TRIED TO START TRAFFIC")
+        print("TRIED TO START TRAFFIC HAHAHAHAH")
         self.torcs_proc = subprocess.Popen([command], shell=True, preexec_fn=os.setsid)
-        self.traffic_proc = subprocess.Popen([command1], shell=True, preexec_fn=os.setsid)
-        
+        #self.traffic_proc = subprocess.Popen([command1], shell=True, preexec_fn=os.setsid)
+        #print("THREAD CREATED")
         time.sleep(1)
+        
         #if self.visualise:
         #    os.system('sh autostart.sh {}'.format(window_title))
 
    
     def reset(self, prev_step_info=None):
         """Reset Method. To be called at the end of each episode"""
+        for i in range(5):
+            self.threads.append(threading.Thread(target=playTraffic, kwargs={'port': (self.port + i + 1)}))
+
         if self.initial_reset:
+            for thread in self.threads:
+                thread.start()
             while self.ob is None:
                 try:
                     self.client = snakeoil3.Client(p=self.port,
@@ -118,8 +129,10 @@ class MadrasEnv(TorcsEnv,gym.Env):
             self.initial_reset = False
 
         else:
+            #for i in range(5):
+                #self.threads.append(threading.Thread(target=playTraffic, kwargs={'port': (self.port + i + 1)}))
             try:
-                self.ob, self.client = TorcsEnv.reset(self, client=self.client, relaunch=True)
+                self.ob, self.client = TorcsEnv.reset(self, client=self.client, relaunch=True, threads=self.threads)
             except Exception as e:
                 self.ob = None
                 while self.ob is None:
@@ -142,6 +155,7 @@ class MadrasEnv(TorcsEnv,gym.Env):
         s_t = np.hstack((self.ob.angle, self.ob.track, self.ob.trackPos,
                         self.ob.speedX, self.ob.speedY, self.ob.speedZ,
                         self.ob.wheelSpinVel / 100.0, self.ob.rpm))
+
 
         return s_t
 

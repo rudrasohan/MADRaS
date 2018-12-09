@@ -139,12 +139,15 @@ class Client(object):
     """The class implementation of the server client model."""
 
     def __init__(self, H=None, p=None, i=None,
-                 e=None, t=None, s=None, d=None, vision=False,visualise=True,no_of_visualisations=1):
+                 e=None, t=None, s=None, d=None,
+                 vision=False, visualise=True, traffic=False,
+                 no_of_visualisations=1):
         """Init method for class Client."""
         self.serverPID = None
         self.vision = vision
         self.host = 'localhost'
-        self.visualise=visualise
+        self.visualise = visualise
+        self.is_traffic = traffic
         self.no_of_visualisations = no_of_visualisations
         self.port = 3001
         self.sid = 'SCR'
@@ -223,19 +226,20 @@ class Client(object):
                     # time.sleep(1.0)
                     
                     # os.system('sh scripts/autostart.sh')
-                    command = None
-                    rank = MPI.COMM_WORLD.Get_rank()
+                    if not self.is_traffic:
+                        command = None
+                        rank = MPI.COMM_WORLD.Get_rank()
 
-                    if rank < self.no_of_visualisations and self.visualise:
-                        command = 'export TORCS_PORT={} && vglrun torcs -nolaptime'.format(self.port)
-                        command1 = 'python -m MADRaS.traffic.const_vel {} 50 0 0'.format(self.port+1)
-                    else:
-                        command = 'export TORCS_PORT={} && vglrun torcs -t 10000000  -r ~/.torcs/config/raceman/quickrace.xml -nolaptime'.format(self.port)
-                    if self.vision is True:
-                        command += ' -vision'
-                    self.torcs_proc = subprocess.Popen([command], shell=True, preexec_fn=os.setsid)
-                    self.traffic_proc = subprocess.Popen([command1], shell=True, preexec_fn=os.setsid)
-                    time.sleep(0.5)
+                        if rank < self.no_of_visualisations and self.visualise:
+                            command = 'export TORCS_PORT={} && vglrun torcs -nolaptime'.format(self.port)
+                        #command1 = 'python -m MADRaS.traffic.const_vel {} 50 0 0'.format(self.port+1)
+                        else:
+                            command = 'export TORCS_PORT={} && vglrun torcs -t 10000000  -r ~/.torcs/config/raceman/quickrace.xml -nolaptime'.format(self.port)
+                        if self.vision is True:
+                            command += ' -vision'
+                        self.torcs_proc = subprocess.Popen([command], shell=True, preexec_fn=os.setsid)
+                    #self.traffic_proc = subprocess.Popen([command1], shell=True, preexec_fn=os.setsid)
+                        time.sleep(0.5)
                     
                     n_fail = 50
                 n_fail -= 1

@@ -7,7 +7,7 @@ import os
 import subprocess
 from mpi4py import MPI
 import time
-
+import threading
 import signal
 import collections as col
 from gym import spaces
@@ -169,24 +169,42 @@ class TorcsEnv:
         return self.observation, reward, client.R.d['meta'], {}
 
 
-    def reset(self, client, relaunch=True):        
+    def reset(self, client, relaunch=True, traffic=False, **kwargs):        
         self.time_step = 0
+        threads = kwargs.get('threads', None)
 
         if self.initial_reset is not True:
             client.R.d['meta'] = True
             client.respond_to_server()
 
+        
+
             ## TENTATIVE. Restarting TORCS every episode suffers the memory leak bug!
-            if relaunch is True:
-                self.reset_torcs(client)
-                print("### TORCS is RELAUNCHED ###")
+        if relaunch is True:
+            self.reset_torcs(client)
+            for i in range(5):
+                print("JOINING DONE")
+                threads[i].join()
+
+            print("################TRAFFIC OVER#############")
+            print("### TORCS is RELAUNCHED ###")
 
         # Modify here if you use multiple tracks in the environment
         client = snakeoil3.Client(p=self.port, vision=self.vision,visualise=self.visualise,no_of_visualisations=self.no_of_visualisations)  # Open new UDP in vtorcs
+        print("CLIENT CREATED")
         client.MAX_STEPS = np.inf
 
+        for i in range(5):
+            del threads[0]
+        print("USED THREADS DELEATED NEW LEN {}".format(len(threads)))
+
+        for thread in threads:
+            thread.start()
         # client = self.client
         client.get_servers_input(-1)  # Get the initial input from torcs
+        print("CLIENT got server input")
+
+        print("###########START THREADS##########")
 
         obs = client.S.d  # Get the current full-observation from torcs
         self.observation = self.make_observation(obs)
@@ -219,14 +237,14 @@ class TorcsEnv:
         rank = MPI.COMM_WORLD.Get_rank()        
         if rank < self.no_of_visualisations and self.visualise:
             command = 'export TORCS_PORT={} && vglrun torcs -nolaptime'.format(client.port)
-            command1 = 'python -m MADRaS.traffic.const_vel {} 50 0 0'.format(self.port+1)
+            #command1 = 'python -m MADRaS.traffic.const_vel {} 50 0 0'.format(self.port+1)
         else:
             command = 'export TORCS_PORT={} && vglrun torcs -t 10000000 -r ~/.torcs/config/raceman/quickrace.xml -nolaptime'.format(client.port)
         if self.vision is True:
             command += ' -vision'
 
         self.torcs_proc = subprocess.Popen([command], shell=True, preexec_fn=os.setsid)
-        self.traffic_proc = subprocess.Popen([command1], shell=True, preexec_fn=os.setsid)
+        #self.traffic_proc = subprocess.Popen([command1], shell=True, preexec_fn=os.setsid)
         #self.torcs_proc = subprocess.Popen([command], shell=True)
         time.sleep(1)
 
