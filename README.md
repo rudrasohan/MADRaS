@@ -12,7 +12,6 @@ Note please : Master branch is the development branch, the most stable version o
 ```shell
 git clone https://github.com/madras-simulator/TORCS.git
 ```
-- [plib](http://plib.sourceforge.net/)
 - Install Dependencies
 ``` shell
 

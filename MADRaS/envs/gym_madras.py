@@ -31,7 +31,7 @@ class MadrasEnv(TorcsEnv,gym.Env):
     """Definition of the Gym Madras Env."""
     def __init__(self, vision=False, throttle=True,
                  gear_change=False, port=60934, pid_assist=False,
-                 CLIENT_MAX_STEPS=np.inf,visualise=True,no_of_visualisations=1):
+                 CLIENT_MAX_STEPS=np.inf,visualise=False,no_of_visualisations=1):
         # If `visualise` is set to False torcs simulator will run in headless mode
         """Init Method."""
         self.torcs_proc = None
