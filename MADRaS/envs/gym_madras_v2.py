@@ -170,6 +170,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
         except Exception as e:
             print("Exception {} caught at port {}".format(str(e), self.torcs_server_port))
             self.wait_for_observation()
+            #  TODO(santara): step not performed...
 
         game_state = {"torcs_reward": r,
                       "torcs_done": done,
@@ -210,7 +211,6 @@ class MadrasAgent(TorcsEnv, gym.Env):
             except Exception as e:
                 print("Exception {} caught at port {}".format(str(e), self.torcs_server_port))
                 self.wait_for_observation()
-                #  TODO(santara): step not performed...
 
             game_state = {"torcs_reward": r,
                           "torcs_done": done,
