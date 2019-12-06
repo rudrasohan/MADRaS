@@ -25,11 +25,12 @@ def test_madras_pid():
     print("Testing reset...")
     obs = env.reset()
     print("Initial observation: {}."
-          " Verify if the number of dimensions {} is 29.".format(obs, len(obs)))
+          " Verify if the number of dimensions {} is right.".format(obs, len(obs)))
     print("Testing step...")
     for t in range(2000):
-        obs, r, done, _ = env.step([[0.0, 1.0],
-                                    [0.0, 1.0]])
+        obs, r, done, _ = env.step([[0.3, 0.5],
+                                    # [0.0, 1.0]
+                                    ])
         print("{}: reward={}, done={}".format(t, r, done))
         dones = [x for x in done.values()]
         if np.all(dones):

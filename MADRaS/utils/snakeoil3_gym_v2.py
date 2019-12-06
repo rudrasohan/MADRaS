@@ -286,7 +286,6 @@ class Client(object):
                     n_fail = n_fail_org
 
                 n_fail -= 1
-            print("[{}]: My server PID is {}".format(self.name, self.serverPID))
             if '***identified***' in sockdata:
                 print("{} Client connected on {}..............".format(self.name, self.port))
                 continue
@@ -381,7 +380,7 @@ class ServerState(object):
             # 'gear',
             'distRaced',
             'distFromStart',
-            # 'racePos',
+            'racePos',
             'opponents',
             'wheelSpinVel',
             'z',

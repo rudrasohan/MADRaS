@@ -59,7 +59,6 @@ class TorcsEnv:
 
 
     def step(self, step, client, u, early_stop=1):
-        print("In STEP of {}: My server is {}".format(self.name, client.serverPID))
         reward = 0
         this_action = self.agent_to_torcs(u)
 

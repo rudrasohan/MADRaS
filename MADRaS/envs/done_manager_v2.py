@@ -68,25 +68,17 @@ class RaceOver(MadrasDone):
 
 
 class TimeOut(MadrasDone):
-    def __init__(self):
-        self.num_steps = 0
-
     def check_done(self, game_config, game_state):
-        del game_state
-        self.num_steps += 1
+        self.num_steps = game_state["num_steps"]
         if not game_config.max_steps:
             max_steps = int(game_config.track_len / game_config.target_speed * 50)
         else:
             max_steps = game_config.max_steps
         if self.num_steps >= max_steps:
             print("Done: Episode terminated due to timeout.")
-            self.num_steps = 0
             return True
         else:
             return False
-
-    def reset(self):
-        self.num_steps = 0
 
 
 class Collision(MadrasDone):
@@ -117,35 +109,23 @@ class TurnBackward(MadrasDone):
 
 
 class OutOfTrack(MadrasDone):
-    def __init__(self):
-        self.num_steps = 0
-
     def check_done(self, game_config, game_state):
-        del game_config
-        self.num_steps += 1
-        if game_state["trackPos"] < -1 or game_state["trackPos"] > 1 or np.any(np.asarray(game_state["track"]) < 0):
-            print("Done: Episode terminated because agent went out of track after {} steps.".format(self.num_steps))
-            self.num_steps = 0
+        self.num_steps = game_state["num_steps"]
+        if (game_state["trackPos"] < -1 or game_state["trackPos"] > 1
+            or np.any(np.asarray(game_state["track"]) < 0)):
+            print("Done: Episode terminated because agent went out of track"
+                  " after {} steps.".format(self.num_steps))
             return True
         else:
             return False
-
-    def reset(self):
-        self.num_steps = 0
 
 
 class Rank1(MadrasDone):
-    def __init__(self):
-        self.num_steps = 0
-
     def check_done(self, game_config, game_state):
-        self.num_steps += 1
+        self.num_steps = game_state["num_steps"]
         if game_state["racePos"] == 1:
-            print("Done: Episode terminated because agent is Rank 1 after {} steps.".format(self.num_steps))
-            self.num_steps = 0
+            print("Done: Episode terminated because agent is Rank 1"
+                  " after {} steps.".format(self.num_steps))
             return True
         else:
             return False
-
-    def reset(self):
-        self.num_steps = 0

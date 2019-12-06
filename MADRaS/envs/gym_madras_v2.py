@@ -28,7 +28,7 @@ from mpi4py import MPI
 import socket
 import envs.config_parser as config_parser
 import envs.reward_manager as rm
-import envs.done_manager as dm
+import envs.done_manager_v2 as dm
 import envs.observation_manager as om
 import traffic.traffic as traffic
 import multiprocessing
@@ -66,6 +66,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
         self.reward_manager = rm.RewardManager(self._config.rewards)
         self.done_manager = dm.DoneManager(self._config.dones)
         self.initial_reset = True
+        self.step_num = 0
 
     def create_new_client(self):
         while True:
@@ -85,7 +86,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
         raw_ob = self.client.S.d
         # Get the current full-observation from torcs
         self.ob = self.make_observation(raw_ob)
-        print("[{}]: Initial observation: {}".format(self.name, self.ob))
+        # print("[{}]: Initial observation: {}".format(self.name, self.ob))
         if np.any(np.asarray(self.ob.track) < 0):
             print("Reset produced bad track values.")
         self.distance_traversed = 0
@@ -98,6 +99,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
             self.PID_controller.reset()
         self.reward_manager.reset()
         self.done_manager.reset()
+        self.step_num = 0
         print("Reset: Starting new episode")
 
 
@@ -160,7 +162,6 @@ class MadrasAgent(TorcsEnv, gym.Env):
         if self._config.normalize_actions:
             action[1] = (action[1] + 1) / 2.0  # acceleration back to [0, 1]
             action[2] = (action[2] + 1) / 2.0  # brake back to [0, 1]
-
         r = 0.0
         try:
             self.ob, r, done, info = TorcsEnv.step(self, 0,
@@ -178,7 +179,9 @@ class MadrasAgent(TorcsEnv, gym.Env):
                       "angle": self.client.S.d["angle"],
                       "damage": self.client.S.d["damage"],
                       "trackPos": self.client.S.d["trackPos"],
-                      "track": self.client.S.d["track"]}
+                      "track": self.client.S.d["track"],
+                      "racePos": self.client.S.d["racePos"],
+                      "num_steps": self.step_num}
         reward = self.reward_manager.get_reward(self._config, game_state)
 
         done = self.done_manager.get_done_signal(self._config, game_state)
@@ -218,7 +221,9 @@ class MadrasAgent(TorcsEnv, gym.Env):
                           "angle": self.client.S.d["angle"],
                           "damage": self.client.S.d["damage"],
                           "trackPos": self.client.S.d["trackPos"],
-                          "track": self.client.S.d["track"]}
+                          "track": self.client.S.d["track"],
+                          "racePos": self.client.S.d["racePos"],
+                          "num_steps": self.step_num}
 
             reward += self.reward_manager.get_reward(self._config, game_state)
             if self._config.pid_assist:
@@ -237,6 +242,12 @@ class MadrasAgent(TorcsEnv, gym.Env):
             return_dict[self.name] = self.step_vanilla(action)
         return return_dict
 
+    def increment_step(self):
+        if self._config.pid_assist:
+            self.step_num += self._config.pid_settings['pid_latency']
+        else:
+            self.step_num += 1
+
 
 class MadrasEnv(gym.Env):
     """Definition of the Gym Madras Environment."""
@@ -248,19 +259,22 @@ class MadrasEnv(gym.Env):
         self.seed()
         self.start_torcs_process()
         self.agents ={} 
+
+        if self._config.traffic:
+            self.traffic_manager = traffic.MadrasTrafficManager(
+                self._config.torcs_server_port, len(self.agents), self._config.traffic)
+        num_traffic_agents = len(self._config.traffic) if self._config.traffic else 0
         if self._config.agents:
             for i, agent in enumerate(self._config.agents):
                 agent_name = [x for x in agent.keys()][0]
                 agent_cfg = agent[agent_name]
                 name = '{}_{}'.format(agent_name, i)
-                torcs_server_port = self._config.torcs_server_port + i
+                torcs_server_port = self._config.torcs_server_port + i + num_traffic_agents
                 self.agents[name] = MadrasAgent(name, torcs_server_port, agent_cfg,
                                                 {"track_len": self._config.track_len,
                                                  "max_steps": self._config.max_steps
                                                 })
-        if self._config.traffic:
-            self.traffic_manager = traffic.MadrasTrafficManager(
-                self._config.torcs_server_port, len(self.agents), self._config.traffic)
+
         # self.action_dim = self.agents[0].action_dim  # TODO(santara): Can I not have different action dims for different agents?
         self.initial_reset = True
         print("Madras agents are: ", self.agents)
@@ -369,11 +383,11 @@ class MadrasEnv(gym.Env):
 
         for proc in jobs:
             proc.join()
-        print (return_dict)
         for agent in self.agents:
             next_obs[agent] = return_dict[agent][0]
             reward[agent] = return_dict[agent][1]
             done[agent] = return_dict[agent][2]
             info[agent] = return_dict[agent][3]
+            self.agents[agent].increment_step()
 
         return next_obs, reward, done, info
