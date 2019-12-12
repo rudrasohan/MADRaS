@@ -366,6 +366,7 @@ class MadrasEnv(gym.Env):
         # Collect first observations
         for agent in self.agents:
             s_t[agent] = self.agents[agent].get_observation_from_server()
+            self.agents[agent].client.respond_to_server()
         # Finish reset
         for agent in self.agents:
             self.agents[agent].complete_reset()
