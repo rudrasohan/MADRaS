@@ -191,7 +191,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
         return next_obs, reward, done, info
 
 
-    def step_pid(self, desire):
+    def step_pid(self, desire, e):
         """Execute single step with lane_pos, velocity controls."""
         if self._config.normalize_actions:
             # [-1, 1] should correspond to [-self._config.target_speed,
@@ -230,14 +230,21 @@ class MadrasAgent(TorcsEnv, gym.Env):
                 self.PID_controller.update(self.ob)
             done = self.done_manager.get_done_signal(self._config, game_state)
             if done:
+                e.set()
+                print('e is set by {}'.format(self.name))
+                print(PID_step)
+                break
+            if e.is_set():
+                print('e is not set by {}'.format(self.name))
+                print(PID_step)
                 break
 
         next_obs = self.observation_manager.get_obs(self.ob, self._config)
         return next_obs, reward, done, info
 
-    def step(self, action, return_dict={}):
+    def step(self, action, e, return_dict={}):
         if self._config.pid_assist:
-            return_dict[self.name] = self.step_pid(action)
+            return_dict[self.name] = self.step_pid(action, e)
         else:
             return_dict[self.name] = self.step_vanilla(action)
         return return_dict
@@ -376,9 +383,10 @@ class MadrasEnv(gym.Env):
         next_obs, reward, done, info = {}, {}, {}, {}
         manager = multiprocessing.Manager()
         return_dict = manager.dict()
+        e = multiprocessing.Event()
         jobs = []
         for i, agent in enumerate(self.agents):
-            p = multiprocessing.Process(target=self.agents[agent].step, args=(action[i], return_dict))
+            p = multiprocessing.Process(target=self.agents[agent].step, args=(action[i], e, return_dict))
             jobs.append(p)
             p.start()
 
