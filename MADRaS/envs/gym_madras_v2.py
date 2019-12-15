@@ -31,11 +31,12 @@ import MADRaS.utils.reward_manager as rm
 import MADRaS.utils.done_manager_v2 as dm
 import MADRaS.utils.observation_manager as om
 import MADRaS.traffic.traffic as traffic
+from collections import OrderedDict
 import multiprocessing
 
 path_and_file = os.path.realpath(__file__)
 path, file = os.path.split(path_and_file)
-DEFAULT_SIM_OPTIONS_FILE = os.path.join(path, "data", "sim_options.yml")
+DEFAULT_SIM_OPTIONS_FILE = os.path.join(path, "data", "sim_options_v2.yml")
 
 
 class MadrasAgent(TorcsEnv, gym.Env):
@@ -260,7 +261,7 @@ class MadrasEnv(gym.Env):
         self.torcs_proc = None
         self.seed()
         self.start_torcs_process()
-        self.agents ={} 
+        self.agents = OrderedDict()
 
         if self._config.traffic:
             self.traffic_manager = traffic.MadrasTrafficManager(
