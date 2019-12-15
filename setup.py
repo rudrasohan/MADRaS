@@ -2,10 +2,10 @@
 from setuptools import setup
 
 setup(name='MADRaS',
-      version='0.1',
+      version='0.2',
       description='Multi Agent Driving Simulator',
       install_requires=['gym',
                         'pyyaml',
                         'pTable',
                         'matplotlib',
-                        'tensorflow'])
+                        'mpi4py'])
