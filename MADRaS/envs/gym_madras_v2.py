@@ -231,12 +231,9 @@ class MadrasAgent(TorcsEnv, gym.Env):
             done = self.done_manager.get_done_signal(self._config, game_state)
             if done:
                 e.set()
-                print('e is set by {}'.format(self.name))
-                print(PID_step)
                 break
             if e.is_set():
-                print('e is not set by {}'.format(self.name))
-                print(PID_step)
+                print("[{}]: Stopping agent because some other agent has hit done".format(self.name))
                 break
 
         next_obs = self.observation_manager.get_obs(self.ob, self._config)
