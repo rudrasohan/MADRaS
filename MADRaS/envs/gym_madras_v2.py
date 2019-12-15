@@ -343,8 +343,10 @@ class MadrasEnv(gym.Env):
             self.reset_torcs()
         else:
             self.initial_reset = False
+
         if self._config.traffic:
             self.traffic_manager.reset()
+       
         s_t = {}
         # TODO(santara): fix parallel reset
         # jobs = []
@@ -364,8 +366,13 @@ class MadrasEnv(gym.Env):
         #     s_t[agent] = self.agents[agent].reset()
 
         # Create clients and connect their sockets
+        
+
         for agent in self.agents:
             self.agents[agent].create_new_client()
+
+        
+        
         # Collect first observations
         for agent in self.agents:
             s_t[agent] = self.agents[agent].get_observation_from_server()

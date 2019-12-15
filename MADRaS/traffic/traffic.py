@@ -1,9 +1,10 @@
 import numpy as np
-from MADRaS.utils.gym_torcs import TorcsEnv
+from MADRaS.utils.gym_torcs_v2 import TorcsEnv
 import MADRaS.utils.snakeoil3_gym as snakeoil3
 from MADRaS.controllers.pid import PIDController
 import MADRaS.utils.madras_datatypes as md
 from multiprocessing import Process
+from collections import OrderedDict
 from time import time
 
 MadrasDatatypes = md.MadrasDatatypes()
@@ -11,7 +12,7 @@ MadrasDatatypes = md.MadrasDatatypes()
 class MadrasTrafficManager(object):
     """Creates the traffic agents for a given training configuration."""
     def __init__(self, torcs_server_port, num_learning_agents, cfg):
-        self.traffic_agents = {}
+        self.traffic_agents = OrderedDict()
         self.traffic_processes = []
         self.num_episodes_of_training = 0
         for i, agent in enumerate(cfg):
@@ -59,7 +60,6 @@ class MadrasTrafficAgent(object):
         self.env = TorcsEnv(vision=(cfg["vision"] if "vision" in cfg else False),
                             throttle=(cfg["throttle"] if "throttle" in cfg else True),
                             gear_change=(cfg["gear_change"] if "gear_change" in cfg else False),
-                            visualise=(self.cfg["visualise"] if "visualise" in self.cfg else False),
                             name=self.name
                            )
         self.PID_controller = PIDController(cfg["pid_settings"])
