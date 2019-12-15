@@ -224,7 +224,8 @@ class TorcsEnv:
                      'rpm',
                      'track', 
                      'trackPos',
-                     'wheelSpinVel']
+                     'wheelSpinVel',
+                     'distFromStart']
             Observation = col.namedtuple('Observation', names)
             return Observation(focus=np.array(raw_obs['focus'], dtype=madras.floatX)/200.,
                                speedX=np.array(raw_obs['speedX'], dtype=madras.floatX)/self.default_speed,
@@ -236,7 +237,8 @@ class TorcsEnv:
                                rpm=np.array(raw_obs['rpm'], dtype=madras.floatX)/10000,
                                track=np.array(raw_obs['track'], dtype=madras.floatX)/200.,
                                trackPos=np.array(raw_obs['trackPos'], dtype=madras.floatX)/1.,
-                               wheelSpinVel=np.array(raw_obs['wheelSpinVel'], dtype=madras.floatX))
+                               wheelSpinVel=np.array(raw_obs['wheelSpinVel'], dtype=madras.floatX),
+                               distFromStart=np.array(raw_obs['distFromStart'], dtype=madras.floatX))
         else:
             names = ['focus',
                      'speedX', 'speedY', 'speedZ', 'angle',

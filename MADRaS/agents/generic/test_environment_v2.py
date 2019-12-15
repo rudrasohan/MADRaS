@@ -33,7 +33,7 @@ def test_madras_pid():
                                     ])
         print("{}: reward={}, done={}".format(t, r, done))
         dones = [x for x in done.values()]
-        if ((np.any(dones)) or (t%100 == 0)):
+        if ((np.any(dones)) or (t > 0 and t % 100 == 0)):
             env.reset()
     os.system("pkill torcs")
 
