@@ -280,10 +280,10 @@ class Client(object):
                 print("{} Waiting for server data on {}..............".format(self.name, self.port))
 
                 print("[{}]: Server count down : {}".format(self.name, n_fail))
-                if n_fail < 0:
-                    self.shutdown()
-                    return -1
-                    n_fail = n_fail_org
+                # if n_fail < 0:
+                #     self.shutdown()
+                #     return -1
+                #     n_fail = n_fail_org
 
                 n_fail -= 1
             if '***identified***' in sockdata:

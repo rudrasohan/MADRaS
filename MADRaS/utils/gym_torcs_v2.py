@@ -13,8 +13,8 @@ import collections as col
 from gym import spaces
 import numpy as np
 import copy
-import utils.snakeoil3_gym_v2 as snakeoil3
-import utils.madras_datatypes as md
+import MADRaS.utils.snakeoil3_gym_v2 as snakeoil3
+import MADRaS.utils.madras_datatypes as md
 
 madras = md.MadrasDatatypes()
 
@@ -109,7 +109,6 @@ class TorcsEnv:
 
         # Save the previous full-obs from torcs for the reward calculation
         obs_pre = copy.deepcopy(client.S.d)
-
         # One-Step Dynamics Update #################################
         # Apply the Agent's action into torcs
         client.respond_to_server()
@@ -118,9 +117,10 @@ class TorcsEnv:
         code = client.get_servers_input(step)
 
         if code==-1:
+            obs_pre_ret = self.make_observation(obs_pre)
             client.R.d['meta'] = True
             print('Terminating because server stopped responding')
-            return obs_pre, 0, client.R.d['meta'], {'termination_cause':'hardReset'}
+            return obs_pre_ret, 0, client.R.d['meta'], {'termination_cause':'hardReset'}
 
         # Get the current full-observation from torcs
         obs = client.S.d
