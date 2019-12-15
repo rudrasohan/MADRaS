@@ -68,7 +68,6 @@ agents:
         - Collision
         - TurnBackward
         - OutOfTrack
-        - Rank1
   - MadrasAgent:
       vision: False  # whether to use vision input
       throttle: True
@@ -170,66 +169,66 @@ traffic:
           - 0.000001
         accel_scale: 1.0
         steer_scale: 0.1
-  # - ParkedAgent:
-  #     target_speed: 80
-  #     parking_lane_pos:
-  #       low: -0.6
-  #       high: 0.0
-  #     parking_dist_from_start:
-  #       low: 50
-  #       high: 75
-  #     collision_time_window: 1.2
-  #     pid_settings:
-  #       accel_pid:
-  #         - 10.5  # a_x
-  #         - 0.05  # a_y
-  #         - 2.8   # a_z
-  #       steer_pid:
-  #         - 5.1
-  #         - 0.001
-  #         - 0.000001
-  #       accel_scale: 1.0
-  #       steer_scale: 0.1
-  # - ParkedAgent:
-  #     target_speed: 80
-  #     parking_lane_pos:
-  #       low: 0.0
-  #       high: 0.4
-  #     parking_dist_from_start:
-  #       low: 30
-  #       high: 45
-  #     collision_time_window: 1.2
-  #     pid_settings:
-  #       accel_pid:
-  #         - 10.5  # a_x
-  #         - 0.05  # a_y
-  #         - 2.8   # a_z
-  #       steer_pid:
-  #         - 5.1
-  #         - 0.001
-  #         - 0.000001
-  #       accel_scale: 1.0
-  #       steer_scale: 0.1
-  # - ParkedAgent:
-  #     target_speed: 80
-  #     parking_lane_pos:
-  #       low: -0.6
-  #       high: 0.0
-  #     parking_dist_from_start:
-  #       low: 15
-  #       high: 25
-  #     collision_time_window: 1.2
-  #     pid_settings:
-  #       accel_pid:
-  #         - 10.5  # a_x
-  #         - 0.05  # a_y
-  #         - 2.8   # a_z
-  #       steer_pid:
-  #         - 5.1
-  #         - 0.001
-  #         - 0.000001
-  #       accel_scale: 1.0
-  #       steer_scale: 0.1
+#   - ParkedAgent:
+#       target_speed: 80
+#       parking_lane_pos:
+#         low: -0.6
+#         high: 0.0
+#       parking_dist_from_start:
+#         low: 50
+#         high: 75
+#       collision_time_window: 1.2
+#       pid_settings:
+#         accel_pid:
+#           - 10.5  # a_x
+#           - 0.05  # a_y
+#           - 2.8   # a_z
+#         steer_pid:
+#           - 5.1
+#           - 0.001
+#           - 0.000001
+#         accel_scale: 1.0
+#         steer_scale: 0.1
+#   - ParkedAgent:
+#       target_speed: 80
+#       parking_lane_pos:
+#         low: 0.0
+#         high: 0.4
+#       parking_dist_from_start:
+#         low: 30
+#         high: 45
+#       collision_time_window: 1.2
+#       pid_settings:
+#         accel_pid:
+#           - 10.5  # a_x
+#           - 0.05  # a_y
+#           - 2.8   # a_z
+#         steer_pid:
+#           - 5.1
+#           - 0.001
+#           - 0.000001
+#         accel_scale: 1.0
+#         steer_scale: 0.1
+#   - ParkedAgent:
+#       target_speed: 80
+#       parking_lane_pos:
+#         low: -0.6
+#         high: 0.0
+#       parking_dist_from_start:
+#         low: 15
+#         high: 25
+#       collision_time_window: 1.2
+#       pid_settings:
+#         accel_pid:
+#           - 10.5  # a_x
+#           - 0.05  # a_y
+#           - 2.8   # a_z
+#         steer_pid:
+#           - 5.1
+#           - 0.001
+#           - 0.000001
+#         accel_scale: 1.0
+#         steer_scale: 0.1
 
   # - ConstVelTrafficAgent:
   #     target_speed: 30

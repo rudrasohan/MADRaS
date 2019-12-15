@@ -1,6 +1,6 @@
 import numpy as np
 import gym
-from envs.gym_madras_v2 import MadrasEnv
+from MADRaS.envs.gym_madras_v2 import MadrasEnv
 import os
 
 
@@ -15,7 +15,7 @@ def test_madras_vanilla():
         obs, r, done, _ = env.step([[0.0, 1.0, -1.0]])
         print("{}: reward={}, done={}".format(t, r, done))
         dones = [x for x in done.values()]
-        if np.all(dones):
+        if np.any(dones):
             env.reset()
     os.system("pkill torcs")
 
@@ -33,8 +33,7 @@ def test_madras_pid():
                                     ])
         print("{}: reward={}, done={}".format(t, r, done))
         dones = [x for x in done.values()]
-        print(dones)
-        if np.any(dones):
+        if ((np.any(dones)) or (t > 0 and t % 100 == 0)):
             env.reset()
     os.system("pkill torcs")
 
