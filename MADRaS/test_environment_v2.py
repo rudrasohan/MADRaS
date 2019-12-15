@@ -29,7 +29,7 @@ def test_madras_pid():
     print("Testing step...")
     for t in range(2000):
         obs, r, done, _ = env.step([[0.3, 0.5],
-                                    [0.0, 1.0]
+                                    [-0.3, 1.0]
                                     ])
         print("{}: reward={}, done={}".format(t, r, done))
         dones = [x for x in done.values()]
