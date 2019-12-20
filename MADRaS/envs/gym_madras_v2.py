@@ -376,8 +376,8 @@ class MadrasEnv(gym.Env):
         return_dict = manager.dict()
         e = multiprocessing.Event()
         jobs = []
-        for i, agent in enumerate(self.agents):
-            p = multiprocessing.Process(target=self.agents[agent].step, args=(action[i], e, return_dict))
+        for agent in self.agents:
+            p = multiprocessing.Process(target=self.agents[agent].step, args=(action[agent], e, return_dict))
             jobs.append(p)
             p.start()
 
