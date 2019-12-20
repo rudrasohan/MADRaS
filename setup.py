@@ -8,4 +8,5 @@ setup(name='MADRaS',
                         'pyyaml',
                         'pTable',
                         'matplotlib',
-                        'mpi4py'])
+                        'mpi4py',
+                        'ray[rllib]'])

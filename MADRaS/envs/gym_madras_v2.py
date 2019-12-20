@@ -33,6 +33,7 @@ import MADRaS.utils.observation_manager as om
 import MADRaS.traffic.traffic as traffic
 from collections import OrderedDict
 import multiprocessing
+from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
 path_and_file = os.path.realpath(__file__)
 path, file = os.path.split(path_and_file)
@@ -256,7 +257,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
             self.step_num += 1
 
 
-class MadrasEnv(gym.Env):
+class MadrasEnv(gym.Env, MultiAgentEnv):
     """Definition of the Gym Madras Environment."""
     def __init__(self, cfg_path=DEFAULT_SIM_OPTIONS_FILE):
         # If `visualise` is set to False torcs simulator will run in headless mode
@@ -371,7 +372,7 @@ class MadrasEnv(gym.Env):
         return s_t
 
     def step(self, action):
-        next_obs, reward, done, info = {}, {}, {}, {}
+        next_obs, reward, done, info = {}, {}, {'__all__': False}, {}
         manager = multiprocessing.Manager()
         return_dict = manager.dict()
         e = multiprocessing.Event()
@@ -383,11 +384,17 @@ class MadrasEnv(gym.Env):
 
         for proc in jobs:
             proc.join()
+        
+        done_check = False
+
         for agent in self.agents:
             next_obs[agent] = return_dict[agent][0]
             reward[agent] = return_dict[agent][1]
             done[agent] = return_dict[agent][2]
+            if (done[agent] == True):
+                done_check = True
             info[agent] = return_dict[agent][3]
             self.agents[agent].increment_step()
-
+        
+        done['__all__'] = done_check
         return next_obs, reward, done, info
