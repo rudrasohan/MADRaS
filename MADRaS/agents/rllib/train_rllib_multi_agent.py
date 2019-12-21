@@ -8,20 +8,18 @@ from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from MADRaS.envs.gym_madras_v2 import MadrasEnv
 
 
-class MADRaSRLLib(MultiAgentEnv):
+class MadrasRllib(MultiAgentEnv, MadrasEnv):
     """
-        MADRaS rllib wrapper.
+        MADRaS rllib Env wrapper.
     """
     def __init__(self, *args):
-        self._env = MadrasEnv()
-        self.agents = self._env.agents
-        self.num_agents = self._env.num_agents
+        MadrasEnv.__init__(self)
     
     def reset(self):
-        return self._env.reset()
+        return MadrasEnv.reset(self)
 
     def step(self, action_dict):
-        return self._env.step(action_dict)
+        return MadrasEnv.step(self, action_dict)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--num-iters", type=int, default=20)
@@ -30,7 +28,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     ray.init()
 
-    env = MADRaSRLLib()
+    env = MadrasRllib()
 
     obs_spaces, action_spaces = [], []
     for agent in env.agents:
@@ -38,17 +36,15 @@ if __name__ == "__main__":
         action_spaces.append(env.agents[agent].action_space)
 
     policies = {"ppo_policy_{}".format(i) : (PPOTFPolicy, obs_spaces[i], action_spaces[i], {}) for i in range(env.num_agents)}
-    # You can also have multiple policies per trainer, but here we just
-    # show one each for PPO.
 
     def policy_mapping_fn(agent_id):
         id = agent_id.split("_")[-1]
         return "ppo_policy_{}".format(id)
 
     ppo_trainer = PPOTrainer(
-        env=MADRaSRLLib,
+        env=MadrasRllib,
         config={
-            "sample_batch_size": 50,
+            "sample_batch_size": 50, #set them accordingly
             "train_batch_size": 100,
             "sgd_minibatch_size": 64,
             "multiagent": {
