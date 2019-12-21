@@ -67,7 +67,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
         self.obs_dim = self.observation_manager.get_state_dim()  # No. of sensors input
         self.state_dim = self.observation_manager.get_state_dim()
         self.reward_manager = rm.RewardManager(self._config.rewards)
-        self.done_manager = dm.DoneManager(self._config.dones)
+        self.done_manager = dm.DoneManager(self._config.dones, self.name)
         self.initial_reset = True
         self.step_num = 0
 
@@ -187,7 +187,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
                       "num_steps": self.step_num}
         reward = self.reward_manager.get_reward(self._config, game_state)
 
-        done = self.done_manager.get_done_signal(self._config, game_state, self.name)
+        done = self.done_manager.get_done_signal(self._config, game_state)
 
         next_obs = self.observation_manager.get_obs(self.ob, self._config)
 
@@ -231,7 +231,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
             reward += self.reward_manager.get_reward(self._config, game_state)
             if self._config.pid_assist:
                 self.PID_controller.update(self.ob)
-            done = self.done_manager.get_done_signal(self._config, game_state, self.name)
+            done = self.done_manager.get_done_signal(self._config, game_state)
             if done:
                 e.set()
                 break
