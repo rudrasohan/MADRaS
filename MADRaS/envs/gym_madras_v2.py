@@ -33,7 +33,6 @@ import MADRaS.utils.observation_manager as om
 import MADRaS.traffic.traffic as traffic
 from collections import OrderedDict
 import multiprocessing
-from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
 path_and_file = os.path.realpath(__file__)
 path, file = os.path.split(path_and_file)
@@ -257,7 +256,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
             self.step_num += 1
 
 
-class MadrasEnv(gym.Env, MultiAgentEnv):
+class MadrasEnv(gym.Env):
     """Definition of the Gym Madras Environment."""
     def __init__(self, cfg_path=DEFAULT_SIM_OPTIONS_FILE):
         # If `visualise` is set to False torcs simulator will run in headless mode
@@ -266,6 +265,7 @@ class MadrasEnv(gym.Env, MultiAgentEnv):
         self.torcs_proc = None
         self.seed()
         self.start_torcs_process()
+        self.num_agents = 0
         self.agents = OrderedDict()
 
         if self._config.traffic:
@@ -282,6 +282,7 @@ class MadrasEnv(gym.Env, MultiAgentEnv):
                                                 {"track_len": self._config.track_len,
                                                  "max_steps": self._config.max_steps
                                                 })
+                self.num_agents += 1
 
         # self.action_dim = self.agents[0].action_dim  # TODO(santara): Can I not have different action dims for different agents?
         self.initial_reset = True
@@ -391,7 +392,12 @@ class MadrasEnv(gym.Env, MultiAgentEnv):
             next_obs[agent] = return_dict[agent][0]
             reward[agent] = return_dict[agent][1]
             done[agent] = return_dict[agent][2]
-            if (done[agent] == True):
+            if (done[agent] == True): 
+                """
+                    Although rllib supports individual agent resets
+                    but MADRaS Env as of now has to be reset even if 
+                    one of the agents hits done.
+                """
                 done_check = True
             info[agent] = return_dict[agent][3]
             self.agents[agent].increment_step()
