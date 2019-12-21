@@ -18,11 +18,20 @@ class DoneManager(object):
                           "as done.")
             self.dones['TorcsDone'] = TorcsDone()
 
-    def get_done_signal(self, game_config, game_state):
+    def get_done_signal(self, game_config, game_state, agent_id):
         done_signals = []
-        for done_function in self.dones.values():
-            done_signals.append(done_function.check_done(game_config, game_state))
-        return np.any(done_signals)
+        keys = []
+        
+        for key, done_function in self.dones.items():
+            done_val = done_function.check_done(game_config, game_state)
+            done_signals.append(done_val)
+            if done_val:
+                keys.append(key)
+        
+        signal = np.any(done_signals)
+        if signal:
+            print("[{}]: {}".format(agent_id, keys))
+        return signal
 
     def reset(self):
         for done_function in self.dones.values():
