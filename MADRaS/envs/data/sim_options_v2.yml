@@ -35,6 +35,8 @@ agents:
       # Observation mode
       observations:
         mode: SingleAgentInTrafficObs
+        multi_flag: False
+        buff_size: 2
         normalize: False  # gym_torcs normalizes by default
         obs_min:
           angle: -3.142
@@ -95,6 +97,8 @@ agents:
       # Observation mode
       observations:
         mode: SingleAgentSimpleLapObs
+        multi_flag: False
+        buff_size: 2
         normalize: False  # gym_torcs normalizes by default
         obs_min:
           angle: -3.142

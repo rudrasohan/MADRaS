@@ -20,6 +20,7 @@ from MADRaS.utils.gym_torcs_v2 import TorcsEnv
 from MADRaS.controllers.pid import PIDController
 import gym
 from gym.utils import seeding
+from gym import spaces
 import os
 import subprocess
 import signal
@@ -30,9 +31,14 @@ import MADRaS.utils.config_parser as config_parser
 import MADRaS.utils.reward_manager as rm
 import MADRaS.utils.done_manager_v2 as dm
 import MADRaS.utils.observation_manager as om
+import MADRaS.utils.action_buffer as ab 
+import MADRaS.utils.madras_datatypes as md
 import MADRaS.traffic.traffic as traffic
 from collections import OrderedDict
 import multiprocessing
+
+
+madras = md.MadrasDatatypes()
 
 path_and_file = os.path.realpath(__file__)
 path, file = os.path.split(path_and_file)
@@ -70,6 +76,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
         self.done_manager = dm.DoneManager(self._config.dones, self.name)
         self.initial_reset = True
         self.step_num = 0
+        self.multi_flag = self.observation['multi_flag']
 
     def create_new_client(self):
         while True:
@@ -166,6 +173,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
             action[1] = (action[1] + 1) / 2.0  # acceleration back to [0, 1]
             action[2] = (action[2] + 1) / 2.0  # brake back to [0, 1]
         r = 0.0
+        self.action_buffer.insert(action)
         try:
             self.ob, r, done, info = TorcsEnv.step(self, 0,
                                                    self.client, action,
@@ -209,6 +217,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
         reward = 0.0
 
         for PID_step in range(self._config.pid_settings['pid_latency']):
+            self.action_buffer.insert(desire)
             a_t = self.PID_controller.get_action(desire)
             try:
                 self.ob, r, done, info = TorcsEnv.step(self, PID_step,
@@ -255,6 +264,21 @@ class MadrasAgent(TorcsEnv, gym.Env):
         else:
             self.step_num += 1
 
+    def actions_init(self, info={}):
+        self.action_buffer = ab.ActionBuffer(self.name, self.observation['size'], self.action_dim)
+        additional_dims = 0
+
+        for key, dims in info["agnet"].items():
+            if (self.key != self.name):
+                additional_dims += dims*self.observation['size']
+        
+        self.obs_dim += additional_dims 
+        high = np.hstack(self.observation_space.high, np.ones((additional_dims), dtype=madras.floatX))
+        low = np.hstack(self.observation_space.low, -np.ones((additional_dims), dtype=madras.floatX))
+        self.observation_space = spaces.Box(high=high, low=low)
+
+
+
 
 class MadrasEnv(gym.Env):
     """Definition of the Gym Madras Environment."""
@@ -267,7 +291,9 @@ class MadrasEnv(gym.Env):
         self.start_torcs_process()
         self.num_agents = 0
         self.agents = OrderedDict()
-
+        self.comm_info = {}
+        self.comm_agent_names = []
+        self.act_dims = []
         if self._config.traffic:
             self.traffic_manager = traffic.MadrasTrafficManager(
                 self._config.torcs_server_port, len(self.agents), self._config.traffic)
@@ -275,6 +301,7 @@ class MadrasEnv(gym.Env):
         if self._config.agents:
             for i, agent in enumerate(self._config.agents):
                 agent_name = [x for x in agent.keys()][0]
+                
                 agent_cfg = agent[agent_name]
                 name = '{}_{}'.format(agent_name, i)
                 torcs_server_port = self._config.torcs_server_port + i + num_traffic_agents
@@ -282,9 +309,24 @@ class MadrasEnv(gym.Env):
                                                 {"track_len": self._config.track_len,
                                                  "max_steps": self._config.max_steps
                                                 })
+                if self.agents[name].multi_flag:
+                    self.comm_agent_names.append(agent_name)
+                    self.act_dims.append(self.agents[name].actio_dim)
+                    self.comm_info[agent_name] = self.agents[name].actio_dim
+                    self.comm_info["agnet_map"] = {}
                 self.num_agents += 1
 
+            for agent in self.comm_agent_names:
+                self.agents[agent].actions_init(self.comm_info)
+                self.comm_info["agent_map"][agent] = []
+                for comm_agent in self.comm_agent_names:
+                    if comm_agent != agent:
+                        self.comm_info["agent_map"][agent].append(comm_agent)
+
+            
         # self.action_dim = self.agents[0].action_dim  # TODO(santara): Can I not have different action dims for different agents?
+
+
         self.initial_reset = True
         print("Madras agents are: ", self.agents)
 
@@ -353,7 +395,7 @@ class MadrasEnv(gym.Env):
         if self._config.traffic:
             self.traffic_manager.reset()
        
-        s_t = {}
+        s_t = OrderedDict()
 
         # Create clients and connect their sockets
         
@@ -370,6 +412,10 @@ class MadrasEnv(gym.Env):
         # Finish reset
         for agent in self.agents:
             self.agents[agent].complete_reset()
+
+        for agent, agent_map in self.comm_info["agent_map"].items():
+            for comm_agents in agent_map:
+                s_t[agent] = np.hstack(s_t[agent], self.agent[comm_agents].action_buffer.request())
         return s_t
 
     def step(self, action):
@@ -403,4 +449,8 @@ class MadrasEnv(gym.Env):
             self.agents[agent].increment_step()
         
         done['__all__'] = done_check
+
+        for agent, agent_map in self.comm_info["agent_map"].items():
+            for comm_agents in agent_map:
+                next_obs[agent] = np.hstack(next_obs[agent], self.agent[comm_agents].action_buffer.request())
         return next_obs, reward, done, info
