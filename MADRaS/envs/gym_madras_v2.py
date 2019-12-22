@@ -265,12 +265,12 @@ class MadrasAgent(TorcsEnv, gym.Env):
             self.step_num += 1
 
     def actions_init(self, info={}):
-        self.action_buffer = ab.ActionBuffer(self.name, self._config.observations['size'], self.action_dim)
+        self.action_buffer = ab.ActionBuffer(self.name, self._config.observations['buff_size'], self.action_dim)
         additional_dims = 0
 
-        for key, dims in info["agnet"].items():
+        for key, dims in info["agent"].items():
             if (self.key != self.name):
-                additional_dims += dims*self._config.observations['size']
+                additional_dims += dims*self._config.observations['buff_size']
         
         self.obs_dim += additional_dims 
         high = np.hstack((self.observation_space.high, np.ones((additional_dims), dtype=madras.floatX)))
@@ -291,7 +291,7 @@ class MadrasEnv(gym.Env):
         self.start_torcs_process()
         self.num_agents = 0
         self.agents = OrderedDict()
-        self.comm_info = {}
+        self.comm_info = {"agent":{}, "agent_map":{}}
         self.comm_agent_names = []
         self.act_dims = []
         if self._config.traffic:
@@ -310,12 +310,12 @@ class MadrasEnv(gym.Env):
                                                  "max_steps": self._config.max_steps
                                                 })
                 if self.agents[name].multi_flag:
-                    self.comm_agent_names.append(agent_name)
-                    self.act_dims.append(self.agents[name].actio_dim)
-                    self.comm_info[agent_name] = self.agents[name].actio_dim
+                    self.comm_agent_names.append(name)
+                    self.act_dims.append(self.agents[name].action_dim)
+                    self.comm_info[agent_name] = self.agents[name].action_dim
                     
                 self.num_agents += 1
-            self.comm_info["agent_map"] = {}
+            print("COMM AGENTS",self.comm_agent_names)
             for agent in self.comm_agent_names:
                 self.agents[agent].actions_init(self.comm_info)
                 self.comm_info["agent_map"][agent] = []
@@ -415,7 +415,7 @@ class MadrasEnv(gym.Env):
 
         for agent, agent_map in self.comm_info["agent_map"].items():
             for comm_agents in agent_map:
-                s_t[agent] = np.hstack((s_t[agent], self.agent[comm_agents].action_buffer.request()))
+                s_t[agent] = np.hstack((s_t[agent], self.agents[comm_agents].action_buffer.request()))
         return s_t
 
     def step(self, action):
@@ -452,5 +452,5 @@ class MadrasEnv(gym.Env):
 
         for agent, agent_map in self.comm_info["agent_map"].items():
             for comm_agents in agent_map:
-                next_obs[agent] = np.hstack((next_obs[agent], self.agent[comm_agents].action_buffer.request()))
+                next_obs[agent] = np.hstack((next_obs[agent], self.agents[comm_agents].action_buffer.request()))
         return next_obs, reward, done, info

@@ -35,7 +35,7 @@ agents:
       # Observation mode
       observations:
         mode: SingleAgentInTrafficObs
-        multi_flag: False
+        multi_flag: True
         buff_size: 2
         normalize: False  # gym_torcs normalizes by default
         obs_min:
@@ -97,7 +97,7 @@ agents:
       # Observation mode
       observations:
         mode: SingleAgentSimpleLapObs
-        multi_flag: False
+        multi_flag: True
         buff_size: 2
         normalize: False  # gym_torcs normalizes by default
         obs_min:
