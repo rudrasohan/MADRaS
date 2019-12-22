@@ -77,6 +77,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
         self.initial_reset = True
         self.step_num = 0
         self.multi_flag = self._config.observations['multi_flag']
+        self.buff_size = self._config.observations['buff_size']
 
     def create_new_client(self):
         while True:
@@ -173,8 +174,6 @@ class MadrasAgent(TorcsEnv, gym.Env):
             action[1] = (action[1] + 1) / 2.0  # acceleration back to [0, 1]
             action[2] = (action[2] + 1) / 2.0  # brake back to [0, 1]
         r = 0.0
-        if self.multi_flag:
-            self.action_buffer.insert(action)
         try:
             self.ob, r, done, info = TorcsEnv.step(self, 0,
                                                    self.client, action,
@@ -218,8 +217,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
         reward = 0.0
 
         for PID_step in range(self._config.pid_settings['pid_latency']):
-            if self.multi_flag:
-                self.action_buffer.insert(desire)
+
             a_t = self.PID_controller.get_action(desire)
             try:
                 self.ob, r, done, info = TorcsEnv.step(self, PID_step,
@@ -267,17 +265,18 @@ class MadrasAgent(TorcsEnv, gym.Env):
             self.step_num += 1
 
     def actions_init(self, info={}):
-        self.action_buffer = ab.ActionBuffer(self.name, self._config.observations['buff_size'], self.action_dim)
+        self.action_buffer = ab.ActionBuffer(self.name, self.buff_size, self.action_dim)
         additional_dims = 0
 
-        for key, dims in info["agent"].items():
+        for key, dims_tup in info["agent"].items():
             if (key != self.name):
-                additional_dims += dims*self._config.observations['buff_size']
+                additional_dims += dims_tup[0]*dims_tup[1]
         
         self.obs_dim += additional_dims 
         high = np.hstack((self.observation_space.high, np.ones((additional_dims), dtype=madras.floatX)))
         low = np.hstack((self.observation_space.low, -np.ones((additional_dims), dtype=madras.floatX)))
         self.observation_space = spaces.Box(high=high, low=low)
+        print("{}: {}".format(self.name, self._config.observations['buff_size']))
 
 
 
@@ -312,7 +311,7 @@ class MadrasEnv(gym.Env):
                                                 })
                 if self.agents[name].multi_flag:
                     self.comm_agent_names.append(name)
-                    self.comm_info["agent"][agent_name] = self.agents[name].action_dim
+                    self.comm_info["agent"][name] = (self.agents[name].action_dim, self.agents[name].buff_size) 
                     
                 self.num_agents += 1
             print("COMM AGENTS",self.comm_agent_names)
@@ -413,6 +412,9 @@ class MadrasEnv(gym.Env):
         for agent in self.agents:
             self.agents[agent].complete_reset()
 
+        for comm_agents in self.comm_agent_names: #reset buffers
+            self.agents[comm_agents].action_buffer.reset()
+
         for agent, agent_map in self.comm_info["agent_map"].items():
             for comm_agents in agent_map:
                 s_t[agent] = np.hstack((s_t[agent], self.agents[comm_agents].action_buffer.request()))
@@ -424,7 +426,7 @@ class MadrasEnv(gym.Env):
         return_dict = manager.dict()
         e = multiprocessing.Event()
         jobs = []
-        for agent in self.agents:
+        for agent in self.agents.keys():
             p = multiprocessing.Process(target=self.agents[agent].step, args=(action[agent], e, return_dict))
             jobs.append(p)
             p.start()
@@ -432,6 +434,9 @@ class MadrasEnv(gym.Env):
         for proc in jobs:
             proc.join()
         
+        for agent in self.comm_agent_names:
+            self.agents[agent].action_buffer.insert(action[agent])
+
         done_check = False
 
         for agent in self.agents:

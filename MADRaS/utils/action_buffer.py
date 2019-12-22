@@ -1,5 +1,5 @@
 from queue import Queue 
-from copy import copy
+from copy import deepcopy
 import numpy as np
 import MADRaS.utils.madras_datatypes as md
 
@@ -19,19 +19,22 @@ class ActionBuffer:
         self._curr_size = 0
 
     def insert(self, action):
+        
         if (self._curr_size < self._size):
-            self._buffer.put(action)
             self._curr_size += 1
+            self._buffer.put(action)
         else: 
-            self._buffer.get()
+            _ = self._buffer.get()
             self._buffer.put(action)
 
     def request(self):
-        temp_queue = copy(self._buffer)
+        temp_queue = Queue(maxsize=self._size)
         ret = np.zeros((self._size*self._action_dim,), dtype=madras.floatX)
         for i in range(self._curr_size):
-            ret[i: i+self._action_dim] = temp_queue.get()
-        del temp_queue
+            a = self._buffer.get()
+            temp_queue.put(a)
+            ret[i*self._action_dim: (i+1)*self._action_dim] = a
+        self._buffer = temp_queue
         return ret
 
     def reset(self):

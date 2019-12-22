@@ -36,12 +36,10 @@ def test_madras_pid():
         obs, r, done, _ = env.step({"MadrasAgent_0": [0.3, 0.5],
                                     "MadrasAgent_1": [-0.3, 1.0]
                                 })
-        #print("{}".format(obs))
+        print("{}".format(obs))
         print("{}: reward={}, done={}".format(t, r, done))
-        dones = [x for x in done.values()]
-        if ((np.any(dones)) or (t > 0 and t % 100 == 0)):
+        if (done['__all__'] or (t > 0 and t % 100 == 0)):
             env.reset()
-            break
     os.system("pkill torcs")
 
 
