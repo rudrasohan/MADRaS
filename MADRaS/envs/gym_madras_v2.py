@@ -173,7 +173,8 @@ class MadrasAgent(TorcsEnv, gym.Env):
             action[1] = (action[1] + 1) / 2.0  # acceleration back to [0, 1]
             action[2] = (action[2] + 1) / 2.0  # brake back to [0, 1]
         r = 0.0
-        self.action_buffer.insert(action)
+        if self.multi_flag:
+            self.action_buffer.insert(action)
         try:
             self.ob, r, done, info = TorcsEnv.step(self, 0,
                                                    self.client, action,
@@ -217,7 +218,8 @@ class MadrasAgent(TorcsEnv, gym.Env):
         reward = 0.0
 
         for PID_step in range(self._config.pid_settings['pid_latency']):
-            self.action_buffer.insert(desire)
+            if self.multi_flag:
+                self.action_buffer.insert(desire)
             a_t = self.PID_controller.get_action(desire)
             try:
                 self.ob, r, done, info = TorcsEnv.step(self, PID_step,
@@ -269,7 +271,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
         additional_dims = 0
 
         for key, dims in info["agent"].items():
-            if (self.key != self.name):
+            if (key != self.name):
                 additional_dims += dims*self._config.observations['buff_size']
         
         self.obs_dim += additional_dims 
@@ -293,7 +295,6 @@ class MadrasEnv(gym.Env):
         self.agents = OrderedDict()
         self.comm_info = {"agent":{}, "agent_map":{}}
         self.comm_agent_names = []
-        self.act_dims = []
         if self._config.traffic:
             self.traffic_manager = traffic.MadrasTrafficManager(
                 self._config.torcs_server_port, len(self.agents), self._config.traffic)
@@ -311,8 +312,7 @@ class MadrasEnv(gym.Env):
                                                 })
                 if self.agents[name].multi_flag:
                     self.comm_agent_names.append(name)
-                    self.act_dims.append(self.agents[name].action_dim)
-                    self.comm_info[agent_name] = self.agents[name].action_dim
+                    self.comm_info["agent"][agent_name] = self.agents[name].action_dim
                     
                 self.num_agents += 1
             print("COMM AGENTS",self.comm_agent_names)

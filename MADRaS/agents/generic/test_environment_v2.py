@@ -22,10 +22,15 @@ def test_madras_vanilla():
 
 def test_madras_pid():
     env = MadrasEnv()
+    for key, val in env.agents.items():
+        print("Observation Space ", val.observation_space)
+        print("Obs_dim ", val.obs_dim)
     print("Testing reset...")
     obs = env.reset()
     print("Initial observation: {}."
-          " Verify if the number of dimensions {} is right.".format(obs, len(obs)))
+          " Verify if the number of dimensions is right.".format(obs))
+    for key, value in obs.items():
+        print("{}: {}".format(key, len(value)))
     print("Testing step...")
     for t in range(2000):
         obs, r, done, _ = env.step({"MadrasAgent_0": [0.3, 0.5],
@@ -36,6 +41,7 @@ def test_madras_pid():
         dones = [x for x in done.values()]
         if ((np.any(dones)) or (t > 0 and t % 100 == 0)):
             env.reset()
+            break
     os.system("pkill torcs")
 
 
