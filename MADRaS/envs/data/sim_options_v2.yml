@@ -1,8 +1,8 @@
 torcs_server_port: 60934
-visualise: False  # whether to render TORCS window
+visualise: True  # whether to render TORCS window
 no_of_visualisations: 1  # To visualize multiple training instances (under MPI) in parallel set it to more than 1
-track_len: 2843.10  # in metres. CG Track 3. All track lengths can be found here: http://www.berniw.org/trb/tracks/tracklist.php
-max_steps: 20000  # max episode length
+track_len: 2587.54  # in metres. CG Track 3. All track lengths can be found here: http://www.berniw.org/trb/tracks/tracklist.php
+max_steps: 1000  # max episode length
 track_width: 10.0
 vision: False  # whether to use vision input
 
@@ -13,7 +13,7 @@ agents:
       throttle: True
       gear_change: False
       client_max_steps: -1  # to be interpreted as np.inf
-      target_speed: 13.89  # metres per sec
+      target_speed: 27.78  # metres per sec
       state_dim: 60  # 24
       early_stop: True
       normalize_actions: True  # all actions in [-1, 1]
@@ -36,7 +36,7 @@ agents:
       observations:
         mode: SingleAgentInTrafficObs
         multi_flag: True
-        buff_size: 2
+        buff_size: 1
         normalize: False  # gym_torcs normalizes by default
         obs_min:
           angle: -3.142
@@ -49,20 +49,20 @@ agents:
 
       # Reward function
       rewards:
-        ProgressReward2:
+        ProgressReward3:
           scale: 1.0
         AvgSpeedReward:
           scale: 1.0
+        SuccessfulOvertakeReward:
+          scale: 10.0
         CollisionPenalty:
           scale: 10.0
         TurnBackwardPenalty:
           scale: 10.0
         AngAcclPenalty:
-          scale: 1.0
+          scale: 5.0
           max_ang_accl: 2.0
-        SuccessfulOvertakeReward:
-          scale: 10.0
-
+      
       # Done function
       dones:
         - RaceOver
@@ -70,13 +70,14 @@ agents:
         - Collision
         - TurnBackward
         - OutOfTrack
+
   - MadrasAgent:
       vision: False  # whether to use vision input
       throttle: True
       gear_change: False
       client_max_steps: -1  # to be interpreted as np.inf
-      target_speed: 12.89  # metres per sec
-      state_dim: 24
+      target_speed: 27.78  # metres per sec
+      state_dim: 60  # 24
       early_stop: True
       normalize_actions: True  # all actions in [-1, 1]
       # PID params
@@ -96,9 +97,9 @@ agents:
 
       # Observation mode
       observations:
-        mode: SingleAgentSimpleLapObs
+        mode: SingleAgentInTrafficObs
         multi_flag: True
-        buff_size: 2
+        buff_size: 1
         normalize: False  # gym_torcs normalizes by default
         obs_min:
           angle: -3.142
@@ -115,14 +116,16 @@ agents:
           scale: 1.0
         AvgSpeedReward:
           scale: 1.0
+        SuccessfulOvertakeReward:
+          scale: 10.0
         CollisionPenalty:
           scale: 10.0
         TurnBackwardPenalty:
           scale: 10.0
         AngAcclPenalty:
-          scale: 1.0
+          scale: 5.0
           max_ang_accl: 2.0
-
+      
       # Done function
       dones:
         - RaceOver
@@ -131,16 +134,79 @@ agents:
         - TurnBackward
         - OutOfTrack
 
+  # - MadrasAgent:
+  #     vision: False  # whether to use vision input
+  #     throttle: True
+  #     gear_change: False
+  #     client_max_steps: -1  # to be interpreted as np.inf
+  #     target_speed: 12.89  # metres per sec
+  #     state_dim: 60
+  #     early_stop: True
+  #     normalize_actions: True  # all actions in [-1, 1]
+  #     # PID params
+  #     pid_assist: False
+  #     pid_settings:
+  #       accel_pid:
+  #         - 10.5  # a_x
+  #         - 0.05  # a_y
+  #         - 2.8   # a_z
+  #       steer_pid:
+  #         - 5.1
+  #         - 0.001
+  #         - 0.000001
+  #       accel_scale: 1.0
+  #       steer_scale: 0.1
+  #       pid_latency: 10
+
+  #     # Observation mode
+  #     observations:
+  #       mode: SingleAgentSimpleLapObs
+  #       multi_flag: False
+  #       buff_size: 1
+  #       normalize: False  # gym_torcs normalizes by default
+  #       obs_min:
+  #         angle: -3.142
+  #         track: 0.0
+  #         trackPos: -1.0
+  #       obs_max:
+  #         angle: 3.142
+  #         track: 200.0
+  #         trackPos: 1.0
+
+  #     # Reward function
+  #     rewards:
+  #       ProgressReward2:
+  #         scale: 1.0
+  #       AvgSpeedReward:
+  #         scale: 1.0
+  #       CollisionPenalty:
+  #         scale: 10.0
+  #       TurnBackwardPenalty:
+  #         scale: 10.0
+  #       AngAcclPenalty:
+  #         scale: 1.0
+  #         max_ang_accl: 2.0
+  #       # TaskReward:
+  #       #   scale: 1.0
+
+  #     # Done function
+  #     dones:
+  #       - RaceOver
+  #       - TimeOut
+  #       - TurnBackward
+  #       - OutOfTrack
+
 # Traffic agents
 traffic:
   - ParkedAgent:
-      target_speed: 80
+      track_len: 2587.54
+      target_speed: 50
       parking_lane_pos:
-        low: -0.6
-        high: 0.0
+        low: -0.54
+        high: -0.47
       parking_dist_from_start:
-        low: 100
-        high: 120
+        low: 35
+        high: 35
       collision_time_window: 1.2
       pid_settings:
         accel_pid:
@@ -154,13 +220,14 @@ traffic:
         accel_scale: 1.0
         steer_scale: 0.1
   - ParkedAgent:
-      target_speed: 80
+      track_len: 2587.54
+      target_speed: 50
       parking_lane_pos:
-        low: 0.0
-        high: 0.4
+        low: 0.47
+        high: 0.54
       parking_dist_from_start:
-        low: 80
-        high: 95
+        low: 35
+        high: 35
       collision_time_window: 1.2
       pid_settings:
         accel_pid:
