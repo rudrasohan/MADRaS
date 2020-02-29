@@ -28,9 +28,9 @@ import time
 from mpi4py import MPI
 import socket
 import MADRaS.utils.config_parser as config_parser
-import MADRaS.utils.reward_manager as rm
-import MADRaS.utils.done_manager_v2 as dm
-import MADRaS.utils.observation_manager as om
+import MADRaS.utils.reward_handler as rm
+import MADRaS.utils.done_handler_v2 as dm
+import MADRaS.utils.observation_handler as om
 import MADRaS.utils.action_buffer as ab 
 import MADRaS.utils.madras_datatypes as md
 import MADRaS.traffic.traffic as traffic
@@ -335,7 +335,7 @@ class MadrasEnv(gym.Env):
         self.comm_info = {"agent":{}, "agent_map":{}}
         self.comm_agent_names = []
         if self._config.traffic:
-            self.traffic_manager = traffic.MadrasTrafficHandler(
+            self.traffic_handler = traffic.MadrasTrafficHandler(
                 self._config.torcs_server_port, len(self.agents), self._config.traffic)
         num_traffic_agents = len(self._config.traffic) if self._config.traffic else 0
         if self._config.agents:
@@ -433,7 +433,7 @@ class MadrasEnv(gym.Env):
             self.initial_reset = False
 
         if self._config.traffic:
-            self.traffic_manager.reset()
+            self.traffic_handler.reset()
        
         s_t = OrderedDict()
 
