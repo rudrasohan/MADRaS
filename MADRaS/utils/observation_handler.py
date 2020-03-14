@@ -18,7 +18,7 @@ class ObservationHandler(object):
     def get_obs(self, full_obs, game_config):
         if self.cfg["normalize"]:
             full_obs = self.normalize_obs(full_obs, game_config)
-        return self.obs.get_obs(full_obs)
+            return self.obs.get_obs(full_obs), full_obs
 
     def min_max_normalize(self, var, min, max):
         offset = (min + max) / 2.0

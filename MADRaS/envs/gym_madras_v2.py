@@ -31,7 +31,7 @@ import MADRaS.utils.config_parser as config_parser
 import MADRaS.utils.reward_handler as rm
 import MADRaS.utils.done_handler_v2 as dm
 import MADRaS.utils.observation_handler as om
-import MADRaS.utils.action_buffer as ab 
+import MADRaS.utils.communications_buffer as cb 
 import MADRaS.utils.madras_datatypes as md
 import MADRaS.traffic.traffic as traffic
 from collections import OrderedDict
@@ -43,6 +43,7 @@ mt = md.MadrasDatatypes()
 path_and_file = os.path.realpath(__file__)
 path, file = os.path.split(path_and_file)
 DEFAULT_SIM_OPTIONS_FILE = os.path.join(path, "data", "sim_options_v2.yml")
+DEFAULT_COMMUNICATION_MAP = os.path.join(path, "data", "communications.yml")
 
 
 class MadrasAgent(TorcsEnv, gym.Env):
@@ -210,11 +211,12 @@ class MadrasAgent(TorcsEnv, gym.Env):
 
         done = self.done_handler.get_done_signal(self._config, game_state)
 
-        next_obs = self.observation_handler.get_obs(self.ob, self._config)
+        next_obs, full_obs = self.observation_handler.get_obs(self.ob, self._config)
 
         info['prev_dist'] = game_state["distance_traversed"]
         info['prev_damage'] = game_state["damage"]
         info['prev_pos'] = game_state["racePos"]
+        info['full_obs'] = full_obs
         return next_obs, reward, done, info
 
 
@@ -281,7 +283,9 @@ class MadrasAgent(TorcsEnv, gym.Env):
                 break
 
         
-        next_obs = self.observation_handler.get_obs(self.ob, self._config)
+        next_obs, full_obs = self.observation_handler.get_obs(self.ob, self._config)
+
+        info['full_obs'] = full_obs
         return next_obs, reward, done, info
 
     def step(self, action, e, return_dict={}):
@@ -305,16 +309,39 @@ class MadrasAgent(TorcsEnv, gym.Env):
         #self.increment_dist()
 
     def actions_init(self, info={}):
-        self.action_buffer = ab.ActionBuffer(self.name, self.buff_size, self.action_dim)
+        
+        self.comms_buffer = cb.CommBuffer(self.name, self.buff_size, self.action_dim)
+        additional_dims_h = []
+        additional_dims_l = []
         additional_dims = 0
 
-        for key, dims_tup in info["agent"].items():
-            if (key != self.name):
-                additional_dims += dims_tup[0]*dims_tup[1]
+        for var in info["vars"]:
+            if (var == 'track'):
+                additional_dims_h += 19*[1]
+                additional_dims_l += 19*[0]
+                additional_dims += 19
+            elif (var == 'track'):
+                additional_dims_h += [np.inf]
+                additional_dims_l += [-np.inf]
+                additional_dims += 1
+            elif (var == 'opponents'):
+                additional_dims_h += 36*[1]
+                additional_dims_l += 36*[0]
+                additional_dims += 36
+            elif ('speed' in var):
+                additional_dims_h += [np.inf]
+                additional_dims_l += [-np.inf]
+                additional_dims += 1
+            else:
+                additional_dims_h += [1]
+                additional_dims_l += [-1]
+                additional_dims += 1
         
-        self.obs_dim += additional_dims 
-        high = np.hstack((self.observation_space.high, np.ones((additional_dims), dtype=mt.floatX)))
-        low = np.hstack((self.observation_space.low, -np.ones((additional_dims), dtype=mt.floatX)))
+        self.obs_dim += additional_dims*len(info['comm'])
+        additional_dims_h = additional_dims_h*len(info['comm'])
+        additional_dims_l = additional_dims_l*len(info['comm']) 
+        high = np.hstack((self.observation_space.high, additional_dims_h))
+        low = np.hstack((self.observation_space.low, additional_dims_l))
         self.observation_space = spaces.Box(high=high, low=low)
         print("{}: {}".format(self.name, self._config.observations['buff_size']))
 
@@ -327,6 +354,7 @@ class MadrasEnv(gym.Env):
         # If `visualise` is set to False torcs simulator will run in headless mode
         self._config = config_parser.MadrasEnvConfig()
         self._config.update(config_parser.parse_yaml(cfg_path))
+        self.communications_map = None
         self.torcs_proc = None
         self.seed()
         self.start_torcs_process()
@@ -349,18 +377,25 @@ class MadrasEnv(gym.Env):
                                                 {"track_len": self._config.track_len,
                                                  "max_steps": self._config.max_steps
                                                 })
-                if self.agents[name].multi_flag:
-                    self.comm_agent_names.append(name)
-                    self.comm_info["agent"][name] = (self.agents[name].action_dim, self.agents[name].buff_size) 
+                # if self.agents[name].multi_flag:
+                #     self.comm_agent_names.append(name)
+                #     self.comm_info["agent"][name] = (self.agents[name].action_dim, self.agents[name].buff_size) 
                     
                 self.num_agents += 1
-            print("COMM AGENTS",self.comm_agent_names)
-            for agent in self.comm_agent_names:
-                self.agents[agent].actions_init(self.comm_info)
-                self.comm_info["agent_map"][agent] = []
-                for comm_agent in self.comm_agent_names:
-                    if comm_agent != agent:
-                        self.comm_info["agent_map"][agent].append(comm_agent)
+            
+            if os.path.isfile(DEFAULT_COMMUNICATION_MAP):
+                self.communications_map = config_parser.parse_yaml(DEFAULT_COMMUNICATION_MAP)
+            
+            print("COMMUNICATIONS MAP", self.comm_agent_names)
+            # for agent_s, agents_r in self.communications_map.items():
+            #     self.comm_info["agent"][agent_s] = (self.agents[name].action_dim, self.agents[name].buff_size)
+            #     self.agents[agent_s].action_init(self.communications_map)
+            # for agent in self.comm_agent_names:
+            #     self.agents[agent].actions_init(self.comm_info)
+            #     self.comm_info["agent_map"][agent] = []
+            #     for comm_agent in self.comm_agent_names:
+            #         if comm_agent != agent:
+            #             self.comm_info["agent_map"][agent].append(comm_agent)
 
             
         # self.action_dim = self.agents[0].action_dim  # TODO(santara): Can I not have different action dims for different agents?
@@ -456,7 +491,7 @@ class MadrasEnv(gym.Env):
         for agent in self.agents:
             self.agents[agent].complete_reset()
 
-        for comm_agents in self.comm_agent_names: #reset buffers
+        for comm_agents in self.communications_map.keys(): #reset buffers
             self.agents[comm_agents].action_buffer.reset()
 
         for agent, agent_map in self.comm_info["agent_map"].items():
@@ -491,8 +526,8 @@ class MadrasEnv(gym.Env):
         for proc in jobs:
             proc.join()
         
-        for agent in self.comm_agent_names:
-            self.agents[agent].action_buffer.insert(action[agent])
+        # for agent in self.comm_agent_names:
+        #     self.agents[agent].action_buffer.insert(action[agent])
 
         done_check = False
 
@@ -510,6 +545,10 @@ class MadrasEnv(gym.Env):
             info[agent] = return_dict[agent][3]
             self.agents[agent].increment_step()
             self.agents[agent].increment_(info[agent]['prev_dist'], info[agent]['prev_damage'], info[agent]['prev_pos'])
+
+        for agent, agent_info in self.communications_map.items():
+            for agent_s in agent_info["comms"]:
+                self.agents.comms_buffer.insert(agent[action], info[agent]["full_obs"], agent_info["vars"]) 
         
         done['__all__'] = done_check
 

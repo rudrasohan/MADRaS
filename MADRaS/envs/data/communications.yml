@@ -1,0 +1,20 @@
+MadrasAgent0:
+    buff_size: 2
+    vars:
+        action
+        speedX
+        speedY
+        trackPos
+    comms:
+        MadrasAgent1
+
+
+MadrasAgent1:
+    buff_size: 2
+    vars:
+        action
+        speedX
+        speedY
+        trackPos
+    comms:
+        - MadrasAgent0

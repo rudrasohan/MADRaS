@@ -3,9 +3,9 @@ from copy import deepcopy
 import numpy as np
 import MADRaS.utils.madras_datatypes as md
 
-madras = md.MadrasDatatypes()
+mt = md.MadrasDatatypes()
 
-class ActionBuffer:
+class CommBuffer:
     """
         To hold the last k actions of taken 
         by an agent. 
@@ -18,24 +18,36 @@ class ActionBuffer:
         self._buffer = Queue(maxsize=self._size)
         self._curr_size = 0
 
-    def insert(self, action):
+    def insert(self, action, full_obs, var_list):
         
         if (self._curr_size < self._size):
             self._curr_size += 1
-            self._buffer.put(action)
+            self._buffer.put(self.parse_buffer_items(action, full_obs, var_list))
         else: 
             _ = self._buffer.get()
-            self._buffer.put(action)
+            self._buffer.put(self.parse_buffer_items(action, full_obs, var_list))
 
     def request(self):
         temp_queue = Queue(maxsize=self._size)
-        ret = np.zeros((self._size*self._action_dim,), dtype=madras.floatX)
+        ret = np.zeros((self._size*self._action_dim,), dtype=mt.floatX)
         for i in range(self._curr_size):
             a = self._buffer.get()
             temp_queue.put(a)
             ret[i*self._action_dim: (i+1)*self._action_dim] = a
         self._buffer = temp_queue
         return ret
+
+    def parse_buffer_items(self, action, full_obs, var_list):
+        buffer_array = []
+        for var in var_list:
+            if var == 'action':
+                buffer_array.append(action)
+            else:
+                val = None
+                exec("val = full_obs.{}".format(var))
+                buffer_array.append(val)
+        buffer_array = np.hstack(buffer_array)
+        return buffer_array
 
     def reset(self):
         del self._buffer
