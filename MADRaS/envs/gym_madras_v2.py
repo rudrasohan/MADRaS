@@ -38,7 +38,7 @@ from collections import OrderedDict
 import multiprocessing
 import logging
 
-madras = md.MadrasDatatypes()
+mt = md.MadrasDatatypes()
 #logger = logging.getLogger(__name__)
 path_and_file = os.path.realpath(__file__)
 path, file = os.path.split(path_and_file)
@@ -313,8 +313,8 @@ class MadrasAgent(TorcsEnv, gym.Env):
                 additional_dims += dims_tup[0]*dims_tup[1]
         
         self.obs_dim += additional_dims 
-        high = np.hstack((self.observation_space.high, np.ones((additional_dims), dtype=madras.floatX)))
-        low = np.hstack((self.observation_space.low, -np.ones((additional_dims), dtype=madras.floatX)))
+        high = np.hstack((self.observation_space.high, np.ones((additional_dims), dtype=mt.floatX)))
+        low = np.hstack((self.observation_space.low, -np.ones((additional_dims), dtype=mt.floatX)))
         self.observation_space = spaces.Box(high=high, low=low)
         print("{}: {}".format(self.name, self._config.observations['buff_size']))
 

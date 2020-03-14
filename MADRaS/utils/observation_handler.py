@@ -2,7 +2,7 @@ import numpy as np
 from gym import spaces
 import MADRaS.utils.madras_datatypes as md
 
-MadrasDatatypes = md.MadrasDatatypes()
+mt = md.MadrasDatatypes()
 
 class ObservationHandler(object):
     """Composes the observation vector for a given observation mode."""
@@ -82,10 +82,10 @@ class TorcsObs(MadrasObs):
         else:
             high = np.array([1., np.inf, np.inf, np.inf, 1.,
                              np.inf, 1., np.inf, 255],
-                             dtype=MadrasDatatypes.floatX)
+                             dtype=mt.floatX)
             low = np.array([0., -np.inf, -np.inf, -np.inf, 0.,
                              -np.inf, 0., -np.inf, 0],
-                             dtype=MadrasDatatypes.floatX)
+                             dtype=mt.floatX)
             observation_space = spaces.Box(low=low, high=high)
 
         return observation_space
@@ -110,9 +110,9 @@ class SingleAgentSimpleLapObs(MadrasObs):
         if vision:
             raise NotImplementedError("Vision inputs not supported yet.")
         high = np.asarray([1] + 19*[1] + [np.inf] + 3*[np.inf],
-                          dtype=MadrasDatatypes.floatX)
+                          dtype=mt.floatX)
         low = np.asarray([-1] + 19*[0] + [-np.inf] + 3*[-np.inf],
-                          dtype=MadrasDatatypes.floatX)
+                          dtype=mt.floatX)
 
         observation_space = spaces.Box(low=low, high=high)
 
@@ -139,9 +139,9 @@ class SingleAgentInTrafficObs(MadrasObs):
         if vision:
             raise NotImplementedError("Vision inputs not supported yet.")
         high = np.asarray([1] + 19*[1] + [np.inf] + 3*[np.inf] + 36*[1],
-                          dtype=MadrasDatatypes.floatX)
+                          dtype=mt.floatX)
         low = np.asarray([-1] + 19*[0] + [-np.inf] + 3*[-np.inf] + 36*[0],
-                          dtype=MadrasDatatypes.floatX)
+                          dtype=mt.floatX)
 
         observation_space = spaces.Box(low=low, high=high)
 

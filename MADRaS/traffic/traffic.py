@@ -2,12 +2,10 @@ import numpy as np
 from MADRaS.utils.gym_torcs_v2 import TorcsEnv
 import MADRaS.utils.snakeoil3_gym as snakeoil3
 from MADRaS.controllers.pid import PIDController
-import MADRaS.utils.madras_datatypes as md
 from multiprocessing import Process
 from collections import OrderedDict
 from time import time
 
-MadrasDatatypes = md.MadrasDatatypes()
 
 class MadrasTrafficHandler(object):
     """Creates the traffic agents for a given training configuration."""
