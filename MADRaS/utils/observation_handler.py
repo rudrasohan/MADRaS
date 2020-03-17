@@ -15,9 +15,12 @@ class ObservationHandler(object):
         except:
             raise ValueError("Unrecognized observation mode {}".format(cfg["mode"]))
 
-    def get_obs(self, full_obs, game_config):
+    def get_obs(self, full_obs, game_config, full_flag=False):
         if self.cfg["normalize"]:
             full_obs = self.normalize_obs(full_obs, game_config)
+        if not full_flag:
+            return self.obs.get_obs(full_obs)
+        else:
             return self.obs.get_obs(full_obs), full_obs
 
     def min_max_normalize(self, var, min, max):

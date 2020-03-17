@@ -211,7 +211,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
 
         done = self.done_handler.get_done_signal(self._config, game_state)
 
-        next_obs, full_obs = self.observation_handler.get_obs(self.ob, self._config)
+        next_obs, full_obs = self.observation_handler.get_obs(self.ob, self._config, full_flag=True)
 
         info['prev_dist'] = game_state["distance_traversed"]
         info['prev_damage'] = game_state["damage"]
@@ -233,6 +233,8 @@ class MadrasAgent(TorcsEnv, gym.Env):
             desire[1] /= self.default_speed
 
         reward = 0.0
+
+        #import pdb; pdb.set_trace()
 
         for PID_step in range(self._config.pid_settings['pid_latency']):
 
@@ -282,10 +284,12 @@ class MadrasAgent(TorcsEnv, gym.Env):
                 print("[{}]: Stopping agent because some other agent has hit done".format(self.name))
                 break
 
+        #print("ORIG OB {}".format(self.ob))
+        next_obs, full_obs = self.observation_handler.get_obs(self.ob, self._config, full_flag=True)
+        #print("NEXT OB {}".format(next_obs))
+        #print("FULL OBS {}".format(full_obs._asdict()))
         
-        next_obs, full_obs = self.observation_handler.get_obs(self.ob, self._config)
-
-        info['full_obs'] = full_obs
+        info['full_obs'] = full_obs._asdict()
         return next_obs, reward, done, info
 
     def step(self, action, e, return_dict={}):
@@ -333,12 +337,15 @@ class MadrasAgent(TorcsEnv, gym.Env):
                 additional_dims_h += [np.inf]
                 additional_dims_l += [-np.inf]
                 additional_dims += 1
+            elif ('action' == var):
+                additional_dims_h += [1]*self.action_dim
+                additional_dims_l += [-1]*self.action_dim
+                additional_dims += self.action_dim
             else:
                 additional_dims_h += [1]
                 additional_dims_l += [-1]
                 additional_dims += 1
-        
-        import pdb; pdb.set_trace()
+
         self.obs_dim += additional_dims*len(info['comms'])
         additional_dims_h = additional_dims_h*len(info['comms'])
         additional_dims_l = additional_dims_l*len(info['comms']) 
@@ -499,6 +506,7 @@ class MadrasEnv(gym.Env):
             self.agents[comm_agent].comms_buffer.reset()
             s_t[comm_agent] = np.hstack((s_t[agent], self.agents[comm_agent].comms_buffer.request()))
 
+        
 
         # for agent, agent_map in self.comm_info["agent_map"].items():
         #     for comm_agents in agent_map:
@@ -536,7 +544,7 @@ class MadrasEnv(gym.Env):
         #     self.agents[agent].action_buffer.insert(action[agent])
 
         done_check = False
-
+        #import pdb; pdb.set_trace()
         for agent in self.agents:
             next_obs[agent] = return_dict[agent][0]
             reward[agent] = return_dict[agent][1]
@@ -553,8 +561,8 @@ class MadrasEnv(gym.Env):
             self.agents[agent].increment_(info[agent]['prev_dist'], info[agent]['prev_damage'], info[agent]['prev_pos'])
 
         for agent, agent_info in self.communications_map.items():
-            for agent_s in agent_info["comms"]:
-                self.agents.comms_buffer.insert(agent[action], info[agent]["full_obs"], agent_info["vars"]) 
+            for agent_c in agent_info["comms"]:
+                self.agents[agent].comms_buffer.insert(action[agent_c], info[agent_c]["full_obs"], agent_info["vars"]) 
         
         done['__all__'] = done_check
 
