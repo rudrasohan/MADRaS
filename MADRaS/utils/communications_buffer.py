@@ -11,10 +11,10 @@ class CommBuffer:
         by an agent. 
     """
 
-    def __init__(self, agent_id, size, action_dim):
+    def __init__(self, agent_id, size, buffer_dim):
         self._agent_id = agent_id
         self._size = size
-        self._action_dim = action_dim
+        self._buffer_dim = buffer_dim
         self._buffer = Queue(maxsize=self._size)
         self._curr_size = 0
 
@@ -29,11 +29,11 @@ class CommBuffer:
 
     def request(self):
         temp_queue = Queue(maxsize=self._size)
-        ret = np.zeros((self._size*self._action_dim,), dtype=mt.floatX)
+        ret = np.zeros((self._size*self._buffer_dim,), dtype=mt.floatX)
         for i in range(self._curr_size):
-            a = self._buffer.get()
-            temp_queue.put(a)
-            ret[i*self._action_dim: (i+1)*self._action_dim] = a
+            agent_var = self._buffer.get()
+            temp_queue.put(agent_var)
+            ret[i*self._buffer_dim: (i+1)*self._buffer_dim] = agent_var
         self._buffer = temp_queue
         return ret
 
@@ -43,10 +43,11 @@ class CommBuffer:
             if var == 'action':
                 buffer_array.append(action)
             else:
-                val = None
-                exec("val = full_obs.{}".format(var))
+                val = full_obs[var]
                 buffer_array.append(val)
         buffer_array = np.hstack(buffer_array)
+        #print("BUFFER_{}".format(buffer_array))
+        #print("BUFFER_SIZE {}".format(buffer_array.shape))
         return buffer_array
 
     def reset(self):

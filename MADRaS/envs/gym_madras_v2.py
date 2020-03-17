@@ -314,20 +314,20 @@ class MadrasAgent(TorcsEnv, gym.Env):
 
     def actions_init(self, info={}):
         
-        self.comms_buffer = cb.CommBuffer(self.name, self.buff_size, self.action_dim)
+        
         additional_dims_h = []
         additional_dims_l = []
         additional_dims = 0
 
         for var in info["vars"]:
             
-            if (var == 'trackPos'):
+            if (var == 'track'):
                 additional_dims_h += 19*[1]
                 additional_dims_l += 19*[0]
                 additional_dims += 19
-            elif (var == 'track'):
-                additional_dims_h += [np.inf]
-                additional_dims_l += [-np.inf]
+            elif (var == 'trackPos'):
+                additional_dims_h += [1]
+                additional_dims_l += [-1]
                 additional_dims += 1
             elif (var == 'opponents'):
                 additional_dims_h += 36*[1]
@@ -347,6 +347,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
                 additional_dims += 1
 
         self.obs_dim += additional_dims*len(info['comms'])
+        self.comms_buffer = cb.CommBuffer(self.name, self.buff_size, additional_dims*len(info['comms']))
         additional_dims_h = additional_dims_h*len(info['comms'])
         additional_dims_l = additional_dims_l*len(info['comms']) 
         high = np.hstack((self.observation_space.high, additional_dims_h))
