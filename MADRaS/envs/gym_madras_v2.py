@@ -316,7 +316,8 @@ class MadrasAgent(TorcsEnv, gym.Env):
         additional_dims = 0
 
         for var in info["vars"]:
-            if (var == 'track'):
+            
+            if (var == 'trackPos'):
                 additional_dims_h += 19*[1]
                 additional_dims_l += 19*[0]
                 additional_dims += 19
@@ -337,9 +338,10 @@ class MadrasAgent(TorcsEnv, gym.Env):
                 additional_dims_l += [-1]
                 additional_dims += 1
         
-        self.obs_dim += additional_dims*len(info['comm'])
-        additional_dims_h = additional_dims_h*len(info['comm'])
-        additional_dims_l = additional_dims_l*len(info['comm']) 
+        import pdb; pdb.set_trace()
+        self.obs_dim += additional_dims*len(info['comms'])
+        additional_dims_h = additional_dims_h*len(info['comms'])
+        additional_dims_l = additional_dims_l*len(info['comms']) 
         high = np.hstack((self.observation_space.high, additional_dims_h))
         low = np.hstack((self.observation_space.low, additional_dims_l))
         self.observation_space = spaces.Box(high=high, low=low)
@@ -386,7 +388,9 @@ class MadrasEnv(gym.Env):
             if os.path.isfile(DEFAULT_COMMUNICATION_MAP):
                 self.communications_map = config_parser.parse_yaml(DEFAULT_COMMUNICATION_MAP)
             
-            print("COMMUNICATIONS MAP", self.comm_agent_names)
+            print("COMMUNICATIONS MAP", self.communications_map)
+            for comm_agent, agent_attrs in self.communications_map.items():
+                self.agents[comm_agent].actions_init(agent_attrs)
             # for agent_s, agents_r in self.communications_map.items():
             #     self.comm_info["agent"][agent_s] = (self.agents[name].action_dim, self.agents[name].buff_size)
             #     self.agents[agent_s].action_init(self.communications_map)
@@ -491,12 +495,14 @@ class MadrasEnv(gym.Env):
         for agent in self.agents:
             self.agents[agent].complete_reset()
 
-        for comm_agents in self.communications_map.keys(): #reset buffers
-            self.agents[comm_agents].action_buffer.reset()
+        for comm_agent in self.communications_map.keys(): #reset buffers
+            self.agents[comm_agent].comms_buffer.reset()
+            s_t[comm_agent] = np.hstack((s_t[agent], self.agents[comm_agent].comms_buffer.request()))
 
-        for agent, agent_map in self.comm_info["agent_map"].items():
-            for comm_agents in agent_map:
-                s_t[agent] = np.hstack((s_t[agent], self.agents[comm_agents].action_buffer.request()))
+
+        # for agent, agent_map in self.comm_info["agent_map"].items():
+        #     for comm_agents in agent_map:
+        #         s_t[agent] = np.hstack((s_t[agent], self.agents[comm_agents].comms_buffer.request()))
         
 
         stop_action = {}
@@ -552,7 +558,10 @@ class MadrasEnv(gym.Env):
         
         done['__all__'] = done_check
 
-        for agent, agent_map in self.comm_info["agent_map"].items():
-            for comm_agents in agent_map:
-                next_obs[agent] = np.hstack((next_obs[agent], self.agents[comm_agents].action_buffer.request()))
+        for comm_agent in self.communications_map.keys():
+            next_obs[comm_agent] = np.hstack((next_obs[agent], self.agents[comm_agent].comms_buffer.request()))
+
+        # for agent, agent_map in self.comm_info["agent_map"].items():
+        #     for comm_agents in agent_map:
+        #         next_obs[agent] = np.hstack((next_obs[agent], self.agents[comm_agents].action_buffer.request()))
         return next_obs, reward, done, info
