@@ -78,7 +78,6 @@ class ProgressReward(MadrasReward):
 
 class ProgressReward2(ProgressReward):
     def compute_reward(self, game_config, game_state):
-        print(self.prev_dist)
         target_speed = game_config.target_speed / 50  # m/step
         progress = game_state["distance_traversed"] - game_state["prev_distance_traversed"]
         reward = self.cfg["scale"] * np.min([1.0, progress/target_speed])

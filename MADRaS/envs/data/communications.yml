@@ -4,9 +4,10 @@ MadrasAgent_0:
         - action
         - speedX
         - speedY
-        - trackPos
+        - track
     comms:
         - MadrasAgent_1
+        - MadrasAgent_0
 
 
 MadrasAgent_1:
@@ -16,5 +17,6 @@ MadrasAgent_1:
         - speedX
         - speedY
         - trackPos
+        - opponents
     comms:
         - MadrasAgent_0

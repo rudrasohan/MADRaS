@@ -21,8 +21,11 @@ def test_madras_vanilla():
           " Verify if the number of dimensions {} is right.".format(obs, len(obs)))
     print("Testing step...")
     a = [0.0, 1.0, -1.0]
+    a = [0.0, 0.2, 0.0]
+    b = [0.1, 0.3, 0.0]
+    c = [0.2, 0.4, 0.0]
     for t in range(4000):
-        obs, r, done, _ = env.step({"MadrasAgent_0": a})
+        obs, r, done, _ = env.step({"MadrasAgent_0": a, "MadrasAgent_1": b, "MadrasAgent_2": c})
         if ((t+1)%150 == 0):
             a = [0.0, -1.0, 1.0]
         print("{}: reward={}, done={}".format(t, r, done))
@@ -41,6 +44,7 @@ def test_madras_pid():
     obs = env.reset()
     a = [0.0, 0.2]
     b = [0.1, 0.00]
+    c = [0.2, -0.2]
     print("Initial observation: {}."
           " Verify if the number of dimensions is right.".format(obs))
     for key, value in obs.items():
@@ -48,8 +52,7 @@ def test_madras_pid():
     print("Testing step...")
     running_rew = 0
     for t in range(4000):
-        obs, r, done, _ = env.step({"MadrasAgent_0": a, "MadrasAgent_1": b
-                                })
+        obs, r, done, _ = env.step({"MadrasAgent_0": a, "MadrasAgent_1": b, "MadrasAgent_2": c})
         #print("{}".format(obs))
         #if ((t+1)%15 == 0):
         #    a = [0.0, 0.0]
@@ -62,5 +65,5 @@ def test_madras_pid():
 
 
 if __name__=='__main__':
-    #test_madras_vanilla()
-    test_madras_pid()
+    test_madras_vanilla()
+    #test_madras_pid()

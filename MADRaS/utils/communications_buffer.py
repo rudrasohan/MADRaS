@@ -18,14 +18,14 @@ class CommBuffer:
         self._buffer = Queue(maxsize=self._size)
         self._curr_size = 0
 
-    def insert(self, action, full_obs, var_list):
+    def insert(self, full_obs, var_list):
         
         if (self._curr_size < self._size):
             self._curr_size += 1
-            self._buffer.put(self.parse_buffer_items(action, full_obs, var_list))
+            self._buffer.put(self.parse_buffer_items(full_obs, var_list))
         else: 
             _ = self._buffer.get()
-            self._buffer.put(self.parse_buffer_items(action, full_obs, var_list))
+            self._buffer.put(self.parse_buffer_items(full_obs, var_list))
 
     def request(self):
         temp_queue = Queue(maxsize=self._size)
@@ -37,17 +37,17 @@ class CommBuffer:
         self._buffer = temp_queue
         return ret
 
-    def parse_buffer_items(self, action, full_obs, var_list):
+    def parse_buffer_items(self, full_obs_list, var_list):
         buffer_array = []
-        for var in var_list:
-            if var == 'action':
-                buffer_array.append(action)
-            else:
-                val = full_obs[var]
-                buffer_array.append(val)
+        for full_obs_act in full_obs_list:
+            full_obs, action = full_obs_act
+            for var in var_list:
+                if var == 'action':
+                    buffer_array.append(action)
+                else:
+                    val = full_obs[var]
+                    buffer_array.append(val)
         buffer_array = np.hstack(buffer_array)
-        #print("BUFFER_{}".format(buffer_array))
-        #print("BUFFER_SIZE {}".format(buffer_array.shape))
         return buffer_array
 
     def reset(self):
