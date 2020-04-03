@@ -312,44 +312,44 @@ class MadrasAgent(TorcsEnv, gym.Env):
     def comms_init(self, info={}):
         
         
-        additional_dims_h = []
-        additional_dims_l = []
+        additional_vars_high = []
+        additional_vars_low = []
         additional_dims = 0
 
         for var in info["vars"]:
             
             if (var == 'track'):
-                additional_dims_h += 19*[1]
-                additional_dims_l += 19*[0]
+                additional_vars_high += 19*[1]
+                additional_vars_low += 19*[0]
                 additional_dims += 19
             elif (var == 'trackPos'):
-                additional_dims_h += [1]
-                additional_dims_l += [-1]
+                additional_vars_high += [1]
+                additional_vars_low += [-1]
                 additional_dims += 1
             elif (var == 'opponents'):
-                additional_dims_h += 36*[1]
-                additional_dims_l += 36*[0]
+                additional_vars_high += 36*[1]
+                additional_vars_low += 36*[0]
                 additional_dims += 36
             elif ('speed' in var):
-                additional_dims_h += [np.inf]
-                additional_dims_l += [-np.inf]
+                additional_vars_high += [np.inf]
+                additional_vars_low += [-np.inf]
                 additional_dims += 1
             elif ('action' == var):
-                additional_dims_h += [1]*self.action_dim
-                additional_dims_l += [-1]*self.action_dim
+                additional_vars_high += [1]*self.action_dim
+                additional_vars_low += [-1]*self.action_dim
                 additional_dims += self.action_dim
             else:
-                additional_dims_h += [1]
-                additional_dims_l += [-1]
+                additional_vars_high += [1]
+                additional_vars_low += [-1]
                 additional_dims += 1
 
         print("NAME:{}, lencomms:{}".format(self.name, len(info['comms'])))
         self.obs_dim += additional_dims*len(info['comms'])
         self.comms_buffer = cb.CommBuffer(self.name, self.buff_size, additional_dims*len(info['comms']))
-        additional_dims_h = additional_dims_h*len(info['comms'])
-        additional_dims_l = additional_dims_l*len(info['comms']) 
-        high = np.hstack((self.observation_space.high, additional_dims_h))
-        low = np.hstack((self.observation_space.low, additional_dims_l))
+        additional_vars_high = additional_vars_high*len(info['comms'])
+        additional_vars_low = additional_vars_low*len(info['comms']) 
+        high = np.hstack((self.observation_space.high, additional_vars_high))
+        low = np.hstack((self.observation_space.low, additional_vars_low))
         self.observation_space = spaces.Box(high=high, low=low)
         print("{}: {}".format(self.name, self._config.observations['buff_size']))
 
@@ -384,9 +384,6 @@ class MadrasEnv(gym.Env):
                                                 {"track_len": self._config.track_len,
                                                  "max_steps": self._config.max_steps
                                                 })
-                # if self.agents[name].multi_flag:
-                #     self.comm_agent_names.append(name)
-                #     self.comm_info["agent"][name] = (self.agents[name].action_dim, self.agents[name].buff_size) 
                     
                 self.num_agents += 1
             
