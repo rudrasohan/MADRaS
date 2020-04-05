@@ -330,11 +330,11 @@ class MadrasAgent(TorcsEnv, gym.Env):
                 additional_vars_high += 36*[1]
                 additional_vars_low += 36*[0]
                 additional_dims += 36
-            elif ('speed' in var):
+            elif ('speed' in var): #for handling speedX, speedY & speedZ
                 additional_vars_high += [np.inf]
                 additional_vars_low += [-np.inf]
                 additional_dims += 1
-            elif ('action' == var):
+            elif (var == 'action'):
                 additional_vars_high += [1]*self.action_dim
                 additional_vars_low += [-1]*self.action_dim
                 additional_dims += self.action_dim
@@ -456,6 +456,22 @@ class MadrasEnv(gym.Env):
         self.torcs_proc = subprocess.Popen([command], shell=True, preexec_fn=os.setsid)
         print("TORCS server PID is: ", self.torcs_proc.pid)
 
+    def reset_wait(self):
+        stop_action = {}
+        for agent_name, agent in self.agents.items():
+            if (agent.action_dim == 3):
+                stop_action[agent_name] = [0.0, -1.0, 1.0]
+            else:
+                stop_action[agent_name] = [0.0, 0.0]
+        
+        s_t = None
+        for _ in range(self.init_wait):
+            next_obs, _, _, _ = self.step(stop_action)
+            s_t = next_obs
+
+        return s_t
+        
+
     def reset(self):
         """Reset Method to be called at the end of each episode."""
         if not self.initial_reset:
@@ -486,18 +502,10 @@ class MadrasEnv(gym.Env):
 
         for comm_agent in self.communications_map.keys(): #reset buffers
             self.agents[comm_agent].comms_buffer.reset()
-            s_t[comm_agent] = np.hstack((s_t[agent], self.agents[comm_agent].comms_buffer.request()))
+            s_t[comm_agent] = np.hstack((s_t[comm_agent], self.agents[comm_agent].comms_buffer.request()))
 
-        stop_action = {}
-        for agent_name, agent in self.agents.items():
-            if (agent.action_dim == 3):
-                stop_action[agent_name] = [0.0, -1.0, 1.0]
-            else:
-                stop_action[agent_name] = [0.0, 0.0]
-
-        for i in range(self.init_wait):
-            next_obs, next_reward, next_done, nexxt_info = self.step(stop_action)
-            s_t = next_obs
+        s_t = self.reset_wait()
+        
         return s_t
 
     def step(self, action):
@@ -539,6 +547,6 @@ class MadrasEnv(gym.Env):
         done['__all__'] = done_check
 
         for comm_agent in self.communications_map.keys():
-            next_obs[comm_agent] = np.hstack((next_obs[agent], self.agents[comm_agent].comms_buffer.request()))
+            next_obs[comm_agent] = np.hstack((next_obs[comm_agent], self.agents[comm_agent].comms_buffer.request()))
 
         return next_obs, reward, done, info
