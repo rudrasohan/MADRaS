@@ -101,7 +101,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
         raw_ob = self.client.S.d
         # Get the current full-observation from torcs
         self.ob = self.make_observation(raw_ob)
-        # print("[{}]: Initial observation: {}".format(self.name, self.ob))
+
         if np.any(np.asarray(self.ob.track) < 0):
             print("Reset produced bad track values.")
         self.distance_traversed = 0
@@ -149,7 +149,6 @@ class MadrasAgent(TorcsEnv, gym.Env):
             self.PID_controller.reset()
         self.reward_handler.reset()
         self.done_handler.reset()
-        #print("[{}] Reset: Starting new episode DAMAGE{}".format(self.name, self.client.S.d["damage"]))
         return_dict[self.name] = s_t
 
         return return_dict
@@ -205,8 +204,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
                                                                     self.client.S.d["trackPos"],
                                                                     self.client.S.d['distRaced'],
                                                                     self.ob.speedX*self.default_speed))
-        #print("DISTANCE_TRAVERSED:{} SPEED:{}".format(game_state["distance_traversed"], (self.ob.speedX*self.default_speed)))
-        #print("PREV_DIST: {}".format(game_state["prev_distance_traversed"]))
+
         reward = self.reward_handler.get_reward(self._config, game_state)
 
         done = self.done_handler.get_done_signal(self._config, game_state)
@@ -259,13 +257,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
                           "track": self.client.S.d["track"],
                           "racePos": self.client.S.d["racePos"],
                           "num_steps": self.step_num}
-            # if (self.name == "MadrasAgent_0"):
-            # print("[{0}]PID Lane_pos:{1:0.4f} Distance:{2:0.2f} Speed{3:0.2f} Damage{4:0.2f}".format(self.name,
-            #                                                                                         self.client.S.d["trackPos"],
-            #                                                                                         self.client.S.d['distRaced'],
-            #                                                                                         self.ob.speedX*self.default_speed,
-            #                                                                                         self.client.S.d["damage"]))
-
+           
             reward += self.reward_handler.get_reward(self._config, game_state)
             self.prev_dist = game_state["distance_traversed"]
             self.prev_damage = game_state["prev_damage"]
@@ -394,7 +386,7 @@ class MadrasEnv(gym.Env):
             for comm_agent, agent_attrs in self.communications_map.items():
                 self.agents[comm_agent].comms_init(agent_attrs)
             
-        # self.action_dim = self.agents[0].action_dim  # TODO(santara): Can I not have different action dims for different agents?
+        # TODO(santara): Can I not have different action dims for different agents?
         self.action_space = self.agents["MadrasAgent_0"].action_space
         self.observation_space = self.agents["MadrasAgent_0"].observation_space
 
