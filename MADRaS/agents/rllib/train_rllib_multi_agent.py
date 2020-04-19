@@ -87,7 +87,7 @@ if __name__ == "__main__":
             },
         })
 
-    ppo_trainer.restore("/home/sohan/ray_results/check/checkpoint_240/checkpoint-240")
+    #ppo_trainer.restore("{restore path}")
 
     for i in range(args.num_iters):
         print("== Iteration", i, "==")
@@ -99,8 +99,3 @@ if __name__ == "__main__":
         
         logging.warning("-- PPO --")
         print(pretty_print(ppo_trainer.train()))
-
-        # if (i%20 == 0):
-        #     weights_0 = ppo_trainer.get_weights(["ppo_policy_0"])
-        #     weights_1 = ppo_trainer.get_weights(["ppo_policy_1"])
-        #     ppo_trainer.set_weights({"ppo_policy_0": weights_1, "ppo_policy_1": weights_0})
