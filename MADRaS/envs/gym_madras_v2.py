@@ -335,7 +335,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
                 additional_vars_low += [-1]
                 additional_dims += 1
 
-        print("NAME:{}, lencomms:{}".format(self.name, len(info['comms'])))
+        logging.info("NAME:{}, lencomms:{}".format(self.name, len(info['comms'])))
         self.obs_dim += additional_dims*len(info['comms'])
         self.comms_buffer = cb.CommBuffer(self.name, self.buff_size, additional_dims*len(info['comms']))
         additional_vars_high = additional_vars_high*len(info['comms'])
@@ -343,7 +343,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
         high = np.hstack((self.observation_space.high, additional_vars_high))
         low = np.hstack((self.observation_space.low, additional_vars_low))
         self.observation_space = spaces.Box(high=high, low=low)
-        print("{}: {}".format(self.name, self._config.observations['buff_size']))
+        logging.info("{}: {}".format(self.name, self._config.observations['buff_size']))
 
 
 
@@ -486,7 +486,6 @@ class MadrasEnv(gym.Env):
             s_t[agent] = self.agents[agent].get_observation_from_server()
             self.agents[agent].client.respond_to_server() # To elimate 10s of timeout error, responding to the server after obs
             self.agents[agent].increment_(self.agents[agent].client.S.d["distRaced"], self.agents[agent].client.S.d["damage"], self.agents[agent].client.S.d["racePos"]) 
-            print("[{}] Reset: Starting new episode DAMAGE{}".format(agent, self.agents[agent].client.S.d["damage"]))
         
         # Finish reset
         for agent in self.agents:
